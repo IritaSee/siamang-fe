@@ -1,18 +1,21 @@
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import Icon from "../components/Icon";
+import LanguageToggle from "../components/LanguageToggle";
 import { WARNINGS, SITES } from "../data/mockData";
+import { useLanguage } from "../i18n/LanguageContext";
 import "./OperatorLayout.css";
 import "../operator/operator.css";
 
 const NAV = [
-  { to: "/operator", end: true, icon: "grid", label: "Dasbor" },
-  { to: "/operator/map", icon: "map", label: "Peta / Titik" },
-  { to: "/operator/warnings", icon: "bell", label: "Peringatan" },
-  { to: "/operator/devices", icon: "cpu", label: "Perangkat" },
-  { to: "/operator/users", icon: "users", label: "Pengguna" },
+  { to: "/operator", end: true, icon: "grid", label: { id: "Dasbor", en: "Dashboard" } },
+  { to: "/operator/map", icon: "map", label: { id: "Peta / Titik", en: "Map / Sites" } },
+  { to: "/operator/warnings", icon: "bell", label: { id: "Peringatan", en: "Warnings" } },
+  { to: "/operator/devices", icon: "cpu", label: { id: "Perangkat", en: "Devices" } },
+  { to: "/operator/users", icon: "users", label: { id: "Pengguna", en: "Users" } },
 ];
 
 export default function OperatorLayout() {
+  const { locale } = useLanguage();
   const location = useLocation();
   const activeWarnings = WARNINGS.filter((w) => !w.resolved).length;
   const silentSites = SITES.filter((s) => s.status === "black").length;
@@ -29,7 +32,7 @@ export default function OperatorLayout() {
           </svg>
           <div>
             <div className="op-sidebar__brand-name">SIAMANG</div>
-            <div className="op-sidebar__brand-sub">Konsol Operator</div>
+            <div className="op-sidebar__brand-sub">{locale === "id" ? "Halaman Operator" : "Operator Console"}</div>
           </div>
         </Link>
 
@@ -37,7 +40,7 @@ export default function OperatorLayout() {
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `op-navitem${isActive ? " active" : ""}`}>
               <Icon name={item.icon} size={17} />
-              <span>{item.label}</span>
+              <span>{item.label[locale]}</span>
               {item.to === "/operator/warnings" && activeWarnings > 0 ? <span className="op-navitem__badge">{activeWarnings}</span> : null}
               {item.to === "/operator/devices" && silentSites > 0 ? <span className="op-navitem__badge op-navitem__badge--muted">{silentSites}</span> : null}
             </NavLink>
@@ -47,21 +50,22 @@ export default function OperatorLayout() {
         <div className="op-sidebar__footer">
           <Link to="/" className="op-navitem op-navitem--exit">
             <Icon name="arrow-left" size={17} />
-            <span>Keluar dari mockup</span>
+            <span>{locale === "id" ? "Keluar dari mockup" : "Exit mockup"}</span>
           </Link>
         </div>
       </aside>
 
       <div className="op-main">
         <header className="op-topbar">
-          <div className="op-topbar__title">{current ? current.label : "Konsol Operator"}</div>
+          <div className="op-topbar__title">{current ? current.label[locale] : locale === "id" ? "Halaman Operator" : "Operator Console"}</div>
           <div className="op-topbar__right">
-            <span className="op-topbar__env">PERCONTOHAN · ACEH / SUMBAR / SUMUT</span>
+            <span className="op-topbar__env">{locale === "id" ? "PERCONTOHAN · ACEH / SUMBAR / SUMUT" : "DEMO · ACEH / WEST SUMATRA / NORTH SUMATRA"}</span>
+            <LanguageToggle className="btn btn-ghost btn-sm" />
             <div className="op-topbar__user">
               <div className="op-topbar__avatar">PW</div>
               <div>
                 <div className="op-topbar__user-name">Putri Wulandari</div>
-                <div className="op-topbar__user-role">Admin &middot; BNPB Pusat</div>
+                <div className="op-topbar__user-role">{locale === "id" ? "Admin · BNPB Pusat" : "Admin · BNPB Headquarters"}</div>
               </div>
             </div>
           </div>

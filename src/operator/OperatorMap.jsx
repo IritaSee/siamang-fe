@@ -6,14 +6,16 @@ import StatusBadge from "../components/StatusBadge";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { SITES, BASINS, timeAgo } from "../data/mockData";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const POSITION_LABEL = {
-  upstream: "hulu",
-  midstream: "tengah",
-  downstream: "hilir",
+  upstream: { id: "hulu", en: "upstream" },
+  midstream: { id: "tengah", en: "midstream" },
+  downstream: { id: "hilir", en: "downstream" },
 };
 
 export default function OperatorMap() {
+  const { locale } = useLanguage();
   const [basin, setBasin] = useState("all");
   const [selected, setSelected] = useState(null);
 
@@ -23,15 +25,15 @@ export default function OperatorMap() {
     <div className="op-page">
       <div className="op-page-head">
         <div>
-          <h1>Peta / Titik</h1>
+          <h1>{locale === "id" ? "Peta / Titik" : "Map / Sites"}</h1>
           <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-            {sites.length} titik pemantauan {basin !== "all" ? `di ${basin}` : "di seluruh DAS percontohan"}
+            {sites.length} {locale === "id" ? "titik pemantauan" : "monitoring sites"} {basin !== "all" ? (locale === "id" ? `di ${basin}` : `in ${basin}`) : locale === "id" ? "di seluruh DAS percontohan" : "across all demo watersheds"}
           </p>
         </div>
         <div className="field" style={{ minWidth: 220 }}>
-          <label className="field-label">DAS</label>
+          <label className="field-label">{locale === "id" ? "DAS" : "Watershed"}</label>
           <select className="select" value={basin} onChange={(e) => setBasin(e.target.value)}>
-            <option value="all">Semua DAS</option>
+            <option value="all">{locale === "id" ? "Semua DAS" : "All watersheds"}</option>
             {BASINS.map((b) => (
               <option key={b} value={b}>
                 {b}
@@ -44,21 +46,21 @@ export default function OperatorMap() {
       <div className="op-map-layout">
         <Card className="op-map-list">
           <div className="op-map-list__legend">
-            <MapLegend locale="id" />
+            <MapLegend locale={locale} />
           </div>
           <ul>
             {sites.map((site) => (
               <li key={site.id} className={`op-map-list__item${selected === site.id ? " active" : ""}`}>
                 <button className="op-map-list__item-main" onClick={() => setSelected(site.id)}>
-                  <StatusBadge level={site.status} locale="id" size="sm" />
+                  <StatusBadge level={site.status} locale={locale} size="sm" />
                   <div className="op-map-list__item-body">
                     <div className="op-map-list__item-name">{site.name}</div>
                     <div className="muted" style={{ fontSize: 11.5, textTransform: "capitalize" }}>
-                      {POSITION_LABEL[site.position] ?? site.position} &middot; {timeAgo(site.lastUpdated, "id")}
+                      {(POSITION_LABEL[site.position] ?? { id: site.position, en: site.position })[locale]} &middot; {timeAgo(site.lastUpdated, locale)}
                     </div>
                   </div>
                 </button>
-                <Link to={`/operator/sites/${site.id}`} className="op-map-list__item-link" title="Buka detail titik">
+                <Link to={`/operator/sites/${site.id}`} className="op-map-list__item-link" title={locale === "id" ? "Buka detail titik" : "Open site details"}>
                   <Icon name="chevron-right" size={16} />
                 </Link>
               </li>
@@ -72,10 +74,10 @@ export default function OperatorMap() {
           onSelectSite={setSelected}
           flyToSelected
           height={620}
-          locale="id"
+          locale={locale}
           renderPopupAction={(site) => (
             <Link to={`/operator/sites/${site.id}`} className="btn btn-primary btn-sm" style={{ width: "100%" }}>
-              Buka detail titik
+              {locale === "id" ? "Buka detail titik" : "Open site details"}
             </Link>
           )}
         />

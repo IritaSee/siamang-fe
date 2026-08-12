@@ -18,7 +18,7 @@ export default function Landing() {
         </div>
         <h1>SIAMANG</h1>
         <p className="landing__subtitle">
-          Sistem Peringatan Dini Banjir Bandang (flash-flood) di wilayah Aceh, West Sumatra, and North Sumatra.
+          Flash flood early warning system for Aceh, West Sumatra, and North Sumatra.
         </p>
       </div>
 
@@ -27,24 +27,23 @@ export default function Landing() {
           <div className="landing__card-tag">Operator / Admin Console</div>
           <h2>Operational Service Center</h2>
           <p>
-            Desktop untuk dasbor pemantauan. digunakan oleh BNPB / BPBD / BMKG staff untuk melakukan monitoring titik pemantauan, dan mengelola peringatan.
+            Desktop dashboard for monitoring. Used by BNPB, BPBD, and BMKG staff to monitor sites and manage warnings.
           </p>
           <span className="landing__card-cta">Open console &rarr;</span>
         </Link>
 
         <Link to="/public" className="landing__card landing__card--public">
           <div className="landing__card-tag">Public Platform</div>
-          <h2>Aplikasi Publik</h2>
+          <h2>Public App</h2>
           <p>
-            Mobile, Bahasa Indonesia. Digunakan oleh masyarakat untuk memantau status
-            sungai, menyimpan lokasi favorit, dan menerima peringatan dini.
+            Mobile-first and bilingual. Used by the public to monitor river status, save favorite locations, and receive early warnings.
           </p>
-          <span className="landing__card-cta">Buka aplikasi &rarr;</span>
+          <span className="landing__card-cta">Open app &rarr;</span>
         </Link>
       </div>
 
       <p className="landing__footnote">
-        Semua data yang ditampilkan di mockup ini adalah data tiruan untuk tujuan demonstrasi. Data sungai, titik pemantauan, dan peringatan yang ditampilkan tidak mencerminkan kondisi nyata.
+        All data shown in this mockup is synthetic and for demonstration only. River data, monitoring sites, and warnings do not reflect real-world conditions.
       </p>
     </div>
   );

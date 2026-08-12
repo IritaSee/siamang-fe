@@ -1,19 +1,22 @@
 import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import Icon from "../components/Icon";
+import LanguageToggle from "../components/LanguageToggle";
 import { usePublicAuth } from "../public/PublicAuthContext";
 import LoginPromptModal from "../public/LoginPromptModal";
+import { useLanguage } from "../i18n/LanguageContext";
 import "./PublicLayout.css";
 import "../public/public.css";
 
 const TABS = [
-  { to: "/public", end: true, icon: "home", label: "Beranda" },
-  { to: "/public/map", icon: "map", label: "Peta" },
-  { to: "/public/alerts", icon: "bell", label: "Peringatan" },
-  { to: "/public/settings", icon: "settings", label: "Pengaturan" },
+  { to: "/public", end: true, icon: "home", label: { id: "Beranda", en: "Home" } },
+  { to: "/public/map", icon: "map", label: { id: "Peta", en: "Map" } },
+  { to: "/public/alerts", icon: "bell", label: { id: "Peringatan", en: "Alerts" } },
+  { to: "/public/settings", icon: "settings", label: { id: "Pengaturan", en: "Settings" } },
 ];
 
 export default function PublicLayout() {
   const { isLoggedIn, logout } = usePublicAuth();
+  const { locale } = useLanguage();
   const navigate = useNavigate();
 
   return (
@@ -29,13 +32,14 @@ export default function PublicLayout() {
             <span>SIAMANG</span>
           </Link>
           <div className="pub-topbar__right">
+            <LanguageToggle className="pub-topbar__pill" />
             {isLoggedIn ? (
               <button className="pub-topbar__pill" onClick={logout}>
-                <Icon name="logout" size={13} /> Keluar
+                <Icon name="logout" size={13} /> {locale === "id" ? "Keluar" : "Logout"}
               </button>
             ) : (
               <button className="pub-topbar__pill pub-topbar__pill--primary" onClick={() => navigate("/public/settings")}>
-                Masuk
+                {locale === "id" ? "Masuk" : "Sign in"}
               </button>
             )}
           </div>
@@ -49,14 +53,14 @@ export default function PublicLayout() {
           {TABS.map((t) => (
             <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => `pub-tab${isActive ? " active" : ""}`}>
               <Icon name={t.icon} size={20} />
-              <span>{t.label}</span>
+              <span>{t.label[locale]}</span>
             </NavLink>
           ))}
         </nav>
         <LoginPromptModal />
       </div>
       <Link to="/" className="pub-exit">
-        <Icon name="arrow-left" size={14} /> Exit mockup
+        <Icon name="arrow-left" size={14} /> {locale === "id" ? "Keluar mockup" : "Exit mockup"}
       </Link>
     </div>
   );

@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import StatusBadge from "../components/StatusBadge";
 import { WARNINGS, siteById, timeAgo, formatClock } from "../data/mockData";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const SOURCE_LABEL = {
-  sensor_threshold: "Ambang sensor",
-  central_forecast: "Prakiraan pusat",
-  manual: "Manual",
-  liveness_monitor: "Monitor keaktifan",
+  sensor_threshold: { id: "Ambang sensor", en: "Sensor threshold" },
+  central_forecast: { id: "Prakiraan pusat", en: "Central forecast" },
+  manual: { id: "Manual", en: "Manual" },
+  liveness_monitor: { id: "Monitor keaktifan", en: "Liveness monitor" },
 };
 
 export default function Warnings() {
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const [status, setStatus] = useState("all");
   const [resolved, setResolved] = useState("active");
@@ -28,30 +30,30 @@ export default function Warnings() {
     <div className="op-page">
       <div className="op-page-head">
         <div>
-          <h1>Peringatan</h1>
+          <h1>{locale === "id" ? "Peringatan" : "Warnings"}</h1>
           <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-            {rows.length} peringatan sesuai filter
+            {rows.length} {locale === "id" ? "peringatan sesuai filter" : "warnings match the filter"}
           </p>
         </div>
       </div>
 
       <div className="op-toolbar">
         <div className="field">
-          <label className="field-label">Status</label>
+          <label className="field-label">{locale === "id" ? "Status" : "Status"}</label>
           <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="all">Semua status</option>
-            <option value="red">Awas</option>
-            <option value="orange">Siaga</option>
-            <option value="yellow">Waspada</option>
-            <option value="black">Tidak Ada Sinyal</option>
+            <option value="all">{locale === "id" ? "Semua status" : "All statuses"}</option>
+            <option value="red">{locale === "id" ? "Awas" : "Danger"}</option>
+            <option value="orange">{locale === "id" ? "Siaga" : "Alert"}</option>
+            <option value="yellow">{locale === "id" ? "Waspada" : "Watch"}</option>
+            <option value="black">{locale === "id" ? "Tidak Ada Sinyal" : "No Signal"}</option>
           </select>
         </div>
         <div className="field">
-          <label className="field-label">Kondisi</label>
+          <label className="field-label">{locale === "id" ? "Kondisi" : "State"}</label>
           <select className="select" value={resolved} onChange={(e) => setResolved(e.target.value)}>
-            <option value="active">Hanya aktif</option>
-            <option value="resolved">Hanya selesai</option>
-            <option value="all">Semua</option>
+            <option value="active">{locale === "id" ? "Hanya aktif" : "Active only"}</option>
+            <option value="resolved">{locale === "id" ? "Hanya selesai" : "Resolved only"}</option>
+            <option value="all">{locale === "id" ? "Semua" : "All"}</option>
           </select>
         </div>
       </div>
@@ -60,11 +62,11 @@ export default function Warnings() {
         <table className="data-table data-table--clickable">
           <thead>
             <tr>
-              <th>Titik</th>
-              <th>Status</th>
-              <th>Sumber</th>
-              <th>Dipicu</th>
-              <th>Kondisi</th>
+              <th>{locale === "id" ? "Titik" : "Site"}</th>
+              <th>{locale === "id" ? "Status" : "Status"}</th>
+              <th>{locale === "id" ? "Sumber" : "Source"}</th>
+              <th>{locale === "id" ? "Dipicu" : "Triggered"}</th>
+              <th>{locale === "id" ? "Kondisi" : "State"}</th>
             </tr>
           </thead>
           <tbody>
@@ -74,15 +76,15 @@ export default function Warnings() {
                 <tr key={w.id} onClick={() => navigate(`/operator/warnings/${w.id}`)}>
                   <td style={{ fontWeight: 700 }}>{site?.name}</td>
                   <td>
-                    <StatusBadge level={w.status} locale="id" size="sm" />
+                      <StatusBadge level={w.status} locale={locale} size="sm" />
                   </td>
-                  <td className="muted">{SOURCE_LABEL[w.source]}</td>
+                    <td className="muted">{SOURCE_LABEL[w.source]?.[locale] ?? w.source}</td>
                   <td>
-                    {formatClock(w.triggeredAt)} UTC <span className="muted">&middot; {timeAgo(w.triggeredAt, "id")}</span>
+                      {formatClock(w.triggeredAt)} UTC <span className="muted">&middot; {timeAgo(w.triggeredAt, locale)}</span>
                   </td>
                   <td>
                     <span className={`badge-neutral${w.resolved ? "" : " badge-neutral--active"}`}>
-                      {w.resolved ? "Selesai" : "Aktif"}
+                        {w.resolved ? (locale === "id" ? "Selesai" : "Resolved") : (locale === "id" ? "Aktif" : "Active")}
                     </span>
                   </td>
                 </tr>
@@ -91,7 +93,7 @@ export default function Warnings() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={5}>
-                  <div className="empty-state">Tidak ada peringatan yang sesuai dengan filter.</div>
+                  <div className="empty-state">{locale === "id" ? "Tidak ada peringatan yang sesuai dengan filter." : "No warnings match the filter."}</div>
                 </td>
               </tr>
             ) : null}
