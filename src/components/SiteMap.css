@@ -1,0 +1,36 @@
+.site-map {
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--ink-100);
+}
+
+.risk-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.site-map__popup-name {
+  font-weight: 800;
+  font-size: 13px;
+}
+.site-map__popup-meta {
+  font-size: 11.5px;
+  color: var(--ink-500);
+  text-transform: capitalize;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+.map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-700);
+}

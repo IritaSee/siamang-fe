@@ -1,0 +1,116 @@
+.landing {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #103a5c 0%, transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, #0d9488 0%, transparent 55%),
+    var(--brand-900);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 20px 40px;
+}
+
+.landing__topline {
+  margin-bottom: 40px;
+}
+.landing__badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a9c6dd;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+}
+
+.landing__hero {
+  text-align: center;
+  max-width: 620px;
+}
+.landing__mark {
+  display: inline-flex;
+  margin-bottom: 18px;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.35));
+}
+.landing__hero h1 {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: 0 0 12px;
+}
+.landing__subtitle {
+  color: #cfe1ee;
+  font-size: 15.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.landing__cards {
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 380px));
+  gap: 22px;
+  width: 100%;
+  max-width: 820px;
+}
+
+.landing__card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius-lg);
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.landing__card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.1);
+}
+.landing__card-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  margin-bottom: 10px;
+}
+.landing__card--public .landing__card-tag {
+  color: #5eead4;
+}
+.landing__card h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+}
+.landing__card p {
+  margin: 0;
+  color: #cfe1ee;
+  font-size: 13.5px;
+  line-height: 1.6;
+  flex: 1;
+}
+.landing__card-cta {
+  margin-top: 18px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--white);
+}
+
+.landing__footnote {
+  margin-top: 44px;
+  color: #7f9bb2;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .landing__cards {
+    grid-template-columns: 1fr;
+  }
+  .landing__hero h1 {
+    font-size: 34px;
+  }
+}

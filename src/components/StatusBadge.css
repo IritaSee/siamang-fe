@@ -1,0 +1,24 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.status-badge--md {
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+.status-badge--sm {
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+.status-badge--lg {
+  padding: 9px 16px;
+  font-size: 14px;
+}
