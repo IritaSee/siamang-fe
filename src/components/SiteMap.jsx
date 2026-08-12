@@ -4,6 +4,12 @@ import { riskDivIcon } from "./mapIcons";
 import StatusBadge from "./StatusBadge";
 import "./SiteMap.css";
 
+const POSITION_LABEL = {
+  upstream: "hulu",
+  midstream: "tengah",
+  downstream: "hilir",
+};
+
 function FlyTo({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
@@ -44,7 +50,7 @@ export default function SiteMap({
               <div className="site-map__popup">
                 <div className="site-map__popup-name">{site.name}</div>
                 <div className="site-map__popup-meta">
-                  {site.basin} &middot; {site.position}
+                  {site.basin} &middot; {locale === "id" ? (POSITION_LABEL[site.position] ?? site.position) : site.position}
                 </div>
                 <div style={{ margin: "8px 0" }}>
                   <StatusBadge level={site.status} locale={locale} size="sm" />

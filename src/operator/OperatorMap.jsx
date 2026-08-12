@@ -7,6 +7,12 @@ import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { SITES, BASINS, timeAgo } from "../data/mockData";
 
+const POSITION_LABEL = {
+  upstream: "hulu",
+  midstream: "tengah",
+  downstream: "hilir",
+};
+
 export default function OperatorMap() {
   const [basin, setBasin] = useState("all");
   const [selected, setSelected] = useState(null);
@@ -17,15 +23,15 @@ export default function OperatorMap() {
     <div className="op-page">
       <div className="op-page-head">
         <div>
-          <h1>Map / Sites</h1>
+          <h1>Peta / Titik</h1>
           <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-            {sites.length} monitoring sites {basin !== "all" ? `in ${basin}` : "across all pilot basins"}
+            {sites.length} titik pemantauan {basin !== "all" ? `di ${basin}` : "di seluruh DAS percontohan"}
           </p>
         </div>
         <div className="field" style={{ minWidth: 220 }}>
-          <label className="field-label">River basin</label>
+          <label className="field-label">DAS</label>
           <select className="select" value={basin} onChange={(e) => setBasin(e.target.value)}>
-            <option value="all">All basins</option>
+            <option value="all">Semua DAS</option>
             {BASINS.map((b) => (
               <option key={b} value={b}>
                 {b}
@@ -38,21 +44,21 @@ export default function OperatorMap() {
       <div className="op-map-layout">
         <Card className="op-map-list">
           <div className="op-map-list__legend">
-            <MapLegend />
+            <MapLegend locale="id" />
           </div>
           <ul>
             {sites.map((site) => (
               <li key={site.id} className={`op-map-list__item${selected === site.id ? " active" : ""}`}>
                 <button className="op-map-list__item-main" onClick={() => setSelected(site.id)}>
-                  <StatusBadge level={site.status} size="sm" />
+                  <StatusBadge level={site.status} locale="id" size="sm" />
                   <div className="op-map-list__item-body">
                     <div className="op-map-list__item-name">{site.name}</div>
                     <div className="muted" style={{ fontSize: 11.5, textTransform: "capitalize" }}>
-                      {site.position} &middot; {timeAgo(site.lastUpdated)}
+                      {POSITION_LABEL[site.position] ?? site.position} &middot; {timeAgo(site.lastUpdated, "id")}
                     </div>
                   </div>
                 </button>
-                <Link to={`/operator/sites/${site.id}`} className="op-map-list__item-link" title="Open site detail">
+                <Link to={`/operator/sites/${site.id}`} className="op-map-list__item-link" title="Buka detail titik">
                   <Icon name="chevron-right" size={16} />
                 </Link>
               </li>
@@ -66,9 +72,10 @@ export default function OperatorMap() {
           onSelectSite={setSelected}
           flyToSelected
           height={620}
+          locale="id"
           renderPopupAction={(site) => (
             <Link to={`/operator/sites/${site.id}`} className="btn btn-primary btn-sm" style={{ width: "100%" }}>
-              Open site detail
+              Buka detail titik
             </Link>
           )}
         />

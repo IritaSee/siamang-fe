@@ -5,11 +5,11 @@ import "./OperatorLayout.css";
 import "../operator/operator.css";
 
 const NAV = [
-  { to: "/operator", end: true, icon: "grid", label: "Dashboard" },
-  { to: "/operator/map", icon: "map", label: "Map / Sites" },
-  { to: "/operator/warnings", icon: "bell", label: "Warnings" },
-  { to: "/operator/devices", icon: "cpu", label: "Devices" },
-  { to: "/operator/users", icon: "users", label: "Users" },
+  { to: "/operator", end: true, icon: "grid", label: "Dasbor" },
+  { to: "/operator/map", icon: "map", label: "Peta / Titik" },
+  { to: "/operator/warnings", icon: "bell", label: "Peringatan" },
+  { to: "/operator/devices", icon: "cpu", label: "Perangkat" },
+  { to: "/operator/users", icon: "users", label: "Pengguna" },
 ];
 
 export default function OperatorLayout() {
@@ -29,7 +29,7 @@ export default function OperatorLayout() {
           </svg>
           <div>
             <div className="op-sidebar__brand-name">SIAMANG</div>
-            <div className="op-sidebar__brand-sub">Operator Console</div>
+            <div className="op-sidebar__brand-sub">Konsol Operator</div>
           </div>
         </Link>
 
@@ -47,16 +47,16 @@ export default function OperatorLayout() {
         <div className="op-sidebar__footer">
           <Link to="/" className="op-navitem op-navitem--exit">
             <Icon name="arrow-left" size={17} />
-            <span>Exit mockup</span>
+            <span>Keluar dari mockup</span>
           </Link>
         </div>
       </aside>
 
       <div className="op-main">
         <header className="op-topbar">
-          <div className="op-topbar__title">{current ? current.label : "Operator Console"}</div>
+          <div className="op-topbar__title">{current ? current.label : "Konsol Operator"}</div>
           <div className="op-topbar__right">
-            <span className="op-topbar__env">PILOT · ACEH / SUMBAR / SUMUT</span>
+            <span className="op-topbar__env">PERCONTOHAN · ACEH / SUMBAR / SUMUT</span>
             <div className="op-topbar__user">
               <div className="op-topbar__avatar">PW</div>
               <div>

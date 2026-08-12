@@ -5,7 +5,7 @@ export default function Landing() {
   return (
     <div className="landing">
       <div className="landing__topline">
-        <span className="landing__badge">FRONTEND MOCKUP — FOR PROPOSAL REVIEW</span>
+        <span className="landing__badge">FRONTEND MOCKUP</span>
       </div>
 
       <div className="landing__hero">
@@ -18,8 +18,7 @@ export default function Landing() {
         </div>
         <h1>SIAMANG</h1>
         <p className="landing__subtitle">
-          Sistem Peringatan Dini Banjir Bandang &mdash; flash-flood early warning for pilot river
-          basins in Aceh, West Sumatra, and North Sumatra.
+          Sistem Peringatan Dini Banjir Bandang (flash-flood) di wilayah Aceh, West Sumatra, and North Sumatra.
         </p>
       </div>
 
@@ -28,8 +27,7 @@ export default function Landing() {
           <div className="landing__card-tag">Operator / Admin Console</div>
           <h2>Operational Service Center</h2>
           <p>
-            Desktop, English. Used by BNPB / BPBD / BMKG staff to monitor sites, manage
-            warnings, and track device health across all basins.
+            Desktop untuk dasbor pemantauan. digunakan oleh BNPB / BPBD / BMKG staff untuk melakukan monitoring titik pemantauan, dan mengelola peringatan.
           </p>
           <span className="landing__card-cta">Open console &rarr;</span>
         </Link>
@@ -46,7 +44,7 @@ export default function Landing() {
       </div>
 
       <p className="landing__footnote">
-        All data on these screens is mock / hardcoded for demonstration purposes only.
+        Semua data yang ditampilkan di mockup ini adalah data tiruan untuk tujuan demonstrasi. Data sungai, titik pemantauan, dan peringatan yang ditampilkan tidak mencerminkan kondisi nyata.
       </p>
     </div>
   );

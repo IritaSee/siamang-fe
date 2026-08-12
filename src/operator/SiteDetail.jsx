@@ -7,11 +7,24 @@ import SensorChart from "../components/SensorChart";
 import SiteMap from "../components/SiteMap";
 import { siteById, SITE_SERIES, devicesForSite, warningsForSite, timeAgo, formatClock } from "../data/mockData";
 
+const POSITION_LABEL = {
+  upstream: "hulu",
+  midstream: "tengah",
+  downstream: "hilir",
+};
+
+const SOURCE_LABEL = {
+  sensor_threshold: "Ambang sensor",
+  central_forecast: "Prakiraan pusat",
+  manual: "Manual",
+  liveness_monitor: "Monitor keaktifan node",
+};
+
 const ACTIONS = [
-  { key: "trigger", label: "Trigger", icon: "siren", cls: "btn-danger" },
-  { key: "escalate", label: "Escalate", icon: "arrow-right", cls: "btn-outline" },
-  { key: "downgrade", label: "Downgrade", icon: "arrow-left", cls: "btn-outline" },
-  { key: "cancel", label: "Cancel warning", icon: "x", cls: "btn-ghost" },
+  { key: "trigger", label: "Picu", icon: "siren", cls: "btn-danger" },
+  { key: "escalate", label: "Naikkan tingkat", icon: "arrow-right", cls: "btn-outline" },
+  { key: "downgrade", label: "Turunkan tingkat", icon: "arrow-left", cls: "btn-outline" },
+  { key: "cancel", label: "Batalkan peringatan", icon: "x", cls: "btn-ghost" },
 ];
 
 export default function SiteDetail() {
@@ -23,8 +36,8 @@ export default function SiteDetail() {
   if (!site) {
     return (
       <div className="op-page">
-        <p>Site not found.</p>
-        <Link to="/operator/map" className="btn btn-outline btn-sm">Back to map</Link>
+        <p>Titik tidak ditemukan.</p>
+        <Link to="/operator/map" className="btn btn-outline btn-sm">Kembali ke peta</Link>
       </div>
     );
   }
@@ -34,14 +47,14 @@ export default function SiteDetail() {
   const history = warningsForSite(site.id);
 
   function runAction(action) {
-    setActionMsg(`${action.label} action recorded (mock) — ${new Date().toLocaleTimeString()}`);
+    setActionMsg(`Aksi ${action.label} tercatat (mock) - ${new Date().toLocaleTimeString("id-ID")}`);
     setTimeout(() => setActionMsg(null), 3500);
   }
 
   return (
     <div className="op-page">
       <div className="op-breadcrumb">
-        <Link to="/operator/map">Map / Sites</Link>
+        <Link to="/operator/map">Peta / Titik</Link>
         <Icon name="chevron-right" size={12} />
         <span>{site.name}</span>
       </div>
@@ -50,21 +63,21 @@ export default function SiteDetail() {
         <div className="op-site-header__left">
           <h1>{site.name}</h1>
           <div className="op-site-header__meta">
-            <span className="badge-neutral" style={{ textTransform: "capitalize" }}>
-              <Icon name="layers" size={12} /> {site.position}
+            <span className="badge-neutral">
+              <Icon name="layers" size={12} /> {POSITION_LABEL[site.position] ?? site.position}
             </span>
-            <span className="muted">{site.basin} basin</span>
+            <span className="muted">DAS {site.basin}</span>
             <span className="muted">{site.province}</span>
-            <span className="muted">Updated {timeAgo(site.lastUpdated)}</span>
+            <span className="muted">Diperbarui {timeAgo(site.lastUpdated, "id")}</span>
           </div>
         </div>
-        <StatusBadge level={site.status} size="lg" />
+        <StatusBadge level={site.status} locale="id" size="lg" />
       </Card>
 
       {site.status === "black" ? (
         <div className="op-inline-notice">
-          <Icon name="wifi-off" size={16} /> This site has gone silent — treat as unknown, not confirmed severe. Dispatch a field
-          check and inspect node power/connectivity in Devices.
+          <Icon name="wifi-off" size={16} /> Titik ini tidak merespons - perlakukan sebagai status tidak diketahui, bukan
+          kondisi parah yang terkonfirmasi. Kirim pemeriksaan lapangan dan cek daya/konektivitas node di menu Perangkat.
         </div>
       ) : null}
 
@@ -77,25 +90,25 @@ export default function SiteDetail() {
       <div className="op-grid-2">
         <Card className="op-panel">
           <div className="section-header">
-            <span className="section-title">Sensor readings</span>
+            <span className="section-title">Pembacaan sensor</span>
           </div>
-          <SensorChart series={series} />
+          <SensorChart series={series} locale="id" />
         </Card>
 
         <Card className="op-panel" style={{ padding: 0, overflow: "hidden" }}>
           <div className="section-header" style={{ padding: "18px 18px 0" }}>
-            <span className="section-title">Location</span>
+            <span className="section-title">Lokasi</span>
           </div>
           <div style={{ padding: 18 }}>
-            <SiteMap sites={[site]} selectedSiteId={site.id} height={260} center={[site.lat, site.lng]} zoom={11} />
+            <SiteMap sites={[site]} selectedSiteId={site.id} height={260} center={[site.lat, site.lng]} zoom={11} locale="id" />
           </div>
         </Card>
       </div>
 
       <Card className="op-panel">
         <div className="section-header">
-          <span className="section-title">Warning actions</span>
-          <span className="muted" style={{ fontSize: 12 }}>Manual override — logged to warning history</span>
+          <span className="section-title">Tindakan peringatan</span>
+          <span className="muted" style={{ fontSize: 12 }}>Override manual - tercatat di riwayat peringatan</span>
         </div>
         <div className="op-action-row">
           {ACTIONS.map((a) => (
@@ -108,16 +121,16 @@ export default function SiteDetail() {
 
       <Card className="op-panel">
         <div className="section-header">
-          <span className="section-title">Nodes at this site</span>
+          <span className="section-title">Node di titik ini</span>
         </div>
         <table className="data-table data-table--clickable">
           <thead>
             <tr>
               <th>Serial</th>
-              <th>Type</th>
+              <th>Tipe</th>
               <th>Status</th>
-              <th>Last contact</th>
-              <th>Battery</th>
+              <th>Kontak terakhir</th>
+              <th>Baterai</th>
             </tr>
           </thead>
           <tbody>
@@ -126,9 +139,9 @@ export default function SiteDetail() {
                 <td style={{ fontWeight: 700 }}>{d.serial}</td>
                 <td>{d.type}</td>
                 <td>
-                  <StatusBadge level={d.status} size="sm" />
+                  <StatusBadge level={d.status} locale="id" size="sm" />
                 </td>
-                <td>{timeAgo(d.lastContact)}</td>
+                <td>{timeAgo(d.lastContact, "id")}</td>
                 <td>{d.battery}%</td>
               </tr>
             ))}
@@ -138,22 +151,22 @@ export default function SiteDetail() {
 
       <Card className="op-panel">
         <div className="section-header">
-          <span className="section-title">Warning history</span>
+          <span className="section-title">Riwayat peringatan</span>
         </div>
         {history.length === 0 ? (
-          <div className="empty-state">No warnings recorded for this site.</div>
+          <div className="empty-state">Belum ada peringatan tercatat untuk titik ini.</div>
         ) : (
           <ul className="op-warning-list">
             {history.map((w) => (
               <li key={w.id}>
                 <Link to={`/operator/warnings/${w.id}`} className="op-warning-row">
-                  <StatusBadge level={w.status} size="sm" />
+                  <StatusBadge level={w.status} locale="id" size="sm" />
                   <div className="op-warning-row__body">
                     <div className="op-warning-row__site">
-                      {w.source.replace("_", " ")} {w.resolved ? "· resolved" : "· active"}
+                      {SOURCE_LABEL[w.source] ?? w.source} {w.resolved ? "· selesai" : "· aktif"}
                     </div>
                     <div className="muted" style={{ fontSize: 11.5 }}>
-                      Triggered {formatClock(w.triggeredAt)} UTC &middot; {timeAgo(w.triggeredAt)}
+                      Dipicu {formatClock(w.triggeredAt)} UTC &middot; {timeAgo(w.triggeredAt, "id")}
                     </div>
                   </div>
                   <Icon name="chevron-right" size={16} className="muted" />

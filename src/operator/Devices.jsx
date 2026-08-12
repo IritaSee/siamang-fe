@@ -20,27 +20,27 @@ export default function Devices() {
     <div className="op-page">
       <div className="op-page-head">
         <div>
-          <h1>Devices</h1>
+          <h1>Perangkat</h1>
           <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-            {DEVICES.length} nodes across {SITES.length} sites in {BASINS.length} basins
+            {DEVICES.length} node di {SITES.length} titik pada {BASINS.length} DAS
           </p>
         </div>
       </div>
 
       <div className="op-toolbar">
         <div className="field" style={{ minWidth: 240 }}>
-          <label className="field-label">Search</label>
-          <input className="text-input" placeholder="Serial, site, or type..." value={q} onChange={(e) => setQ(e.target.value)} />
+          <label className="field-label">Cari</label>
+          <input className="text-input" placeholder="Serial, titik, atau tipe..." value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="field">
           <label className="field-label">Status</label>
           <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="all">All statuses</option>
-            <option value="green">Normal</option>
-            <option value="yellow">Watch</option>
-            <option value="orange">Alert</option>
-            <option value="red">Danger</option>
-            <option value="black">No Signal</option>
+            <option value="all">Semua status</option>
+            <option value="green">Aman</option>
+            <option value="yellow">Waspada</option>
+            <option value="orange">Siaga</option>
+            <option value="red">Awas</option>
+            <option value="black">Tidak Ada Sinyal</option>
           </select>
         </div>
       </div>
@@ -50,11 +50,11 @@ export default function Devices() {
           <thead>
             <tr>
               <th>Serial</th>
-              <th>Site</th>
-              <th>Type</th>
+              <th>Titik</th>
+              <th>Tipe</th>
               <th>Status</th>
-              <th>Last contact</th>
-              <th>Battery</th>
+              <th>Kontak terakhir</th>
+              <th>Baterai</th>
             </tr>
           </thead>
           <tbody>
@@ -64,9 +64,9 @@ export default function Devices() {
                 <td>{d.site}</td>
                 <td className="muted">{d.type}</td>
                 <td>
-                  <StatusBadge level={d.status} size="sm" />
+                  <StatusBadge level={d.status} locale="id" size="sm" />
                 </td>
-                <td>{timeAgo(d.lastContact)}</td>
+                <td>{timeAgo(d.lastContact, "id")}</td>
                 <td>
                   <span className="op-battery">
                     <Icon name="battery" size={14} className={d.battery < 20 ? "op-battery--low" : "muted"} />
@@ -78,7 +78,7 @@ export default function Devices() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={6}>
-                  <div className="empty-state">No devices match these filters.</div>
+                  <div className="empty-state">Tidak ada perangkat yang sesuai dengan filter.</div>
                 </td>
               </tr>
             ) : null}
