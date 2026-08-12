@@ -25,9 +25,9 @@ export default function PublicSettings() {
             <Icon name="settings" size={22} />
           </div>
           <h2>Masuk untuk mengatur akun</h2>
-          <p>Pengaturan favorit, notifikasi, dan bahasa hanya tersedia setelah kamu masuk.</p>
+          <p>Pengaturan favorit, notifikasi hanya tersedia setelah kamu masuk.</p>
           <button className="btn btn-primary" style={{ width: "100%" }} onClick={login}>
-            Masuk (mock)
+            Masuk (sebagai Akun Warga Contoh)
           </button>
           <p className="pub-login-card__footnote">Belum punya akun? Mendaftar hanya butuh beberapa detik.</p>
         </div>
@@ -69,15 +69,6 @@ export default function PublicSettings() {
         )}
       </div>
 
-      <div className="pub-block">
-        <div className="pub-block__head">
-          <span className="pub-block__title">Bahasa</span>
-        </div>
-        <div className="pill-tabs">
-          <button className={lang === "id" ? "active" : ""} onClick={() => setLang("id")}>Bahasa Indonesia</button>
-          <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>English</button>
-        </div>
-      </div>
 
       <div className="pub-block">
         <div className="pub-block__head">

@@ -24,7 +24,7 @@ export default function LoginPromptModal() {
             closeLoginPrompt();
           }}
         >
-          Masuk (mock)
+          Masuk (sebagai Akun Warga Contoh)
         </button>
         <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={closeLoginPrompt}>
           Nanti saja

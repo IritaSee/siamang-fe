@@ -29,7 +29,7 @@ export function PublicAuthProvider({ children }) {
       loginPromptOpen,
       openLoginPrompt: () => setLoginPromptOpen(true),
       closeLoginPrompt: () => setLoginPromptOpen(false),
-      user: { name: "Warga Pangalengan", email: "warga@example.id" },
+      user: { name: "Akun Warga Contoh", email: "warga@example.id" },
     }),
     [isLoggedIn, favorites, savedFavorites, loginPromptOpen]
   );
