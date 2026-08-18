@@ -10,6 +10,7 @@ const SOURCE_LABEL = {
   central_forecast: { id: "Model prakiraan pusat", en: "Central forecast model" },
   manual: { id: "Pemicu manual oleh operator", en: "Manual trigger by operator" },
   liveness_monitor: { id: "Monitor keheningan/keaktifan node", en: "Node liveness monitor" },
+  citizen_report: { id: "Berasal dari laporan warga", en: "Originated from a citizen report" },
 };
 
 const CHANNEL_STATUS_LABEL = {
@@ -32,6 +33,11 @@ const ACTION_LABEL = {
   "Rainfall accumulation crossed WATCH threshold (35mm/3h)": { id: "Akumulasi curah hujan melampaui ambang WASPADA (35mm/3j)", en: "Rainfall accumulation crossed WATCH threshold (35 mm/3h)" },
   "Manually triggered ahead of forecast heavy rain": { id: "Dipicu manual menjelang prakiraan hujan lebat", en: "Manually triggered ahead of forecast heavy rain" },
   "Cancelled — rain did not materialize": { id: "Dibatalkan - hujan tidak terjadi", en: "Cancelled - rain did not materialize" },
+  "Citizen report received near SD Negeri 05 Batang Anai": {
+    id: "Laporan warga diterima dekat SD Negeri 05 Batang Anai",
+    en: "Citizen report received near SD Negeri 05 Batang Anai",
+  },
+  "Warning created from a citizen report": { id: "Peringatan dibuat dari laporan warga", en: "Warning created from a citizen report" },
 };
 
 const CHANNEL_STATUS_TONE = { confirmed: "green", pending: "yellow", failed: "red" };
@@ -67,6 +73,11 @@ export default function WarningDetail() {
           </h1>
           <div className="op-site-header__meta">
             <span className="muted">{SOURCE_LABEL[warning.source]?.[locale] ?? warning.source}</span>
+            {warning.originReportId ? (
+              <Link to={`/operator/reports/${warning.originReportId}`} className="muted" style={{ textDecoration: "underline" }}>
+                {locale === "id" ? "Lihat laporan asal" : "View originating report"}
+              </Link>
+            ) : null}
             <span className="muted">{locale === "id" ? "Dipicu" : "Triggered"} {formatClock(warning.triggeredAt)} UTC &middot; {timeAgo(warning.triggeredAt, locale)}</span>
             <span className={`badge-neutral${warning.resolved ? "" : " badge-neutral--active"}`}>
               {warning.resolved ? `${locale === "id" ? "Selesai" : "Resolved"} ${timeAgo(warning.resolvedAt, locale)}` : locale === "id" ? "Aktif" : "Active"}

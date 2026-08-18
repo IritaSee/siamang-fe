@@ -50,7 +50,19 @@ export default function PublicLayout() {
         </main>
 
         <nav className="pub-tabbar">
-          {TABS.map((t) => (
+          {TABS.slice(0, 2).map((t) => (
+            <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => `pub-tab${isActive ? " active" : ""}`}>
+              <Icon name={t.icon} size={20} />
+              <span>{t.label[locale]}</span>
+            </NavLink>
+          ))}
+          <NavLink to="/public/report" className={({ isActive }) => `pub-tab-raised-wrap${isActive ? " active" : ""}`}>
+            <span className="pub-tab-raised">
+              <Icon name="camera" size={22} />
+            </span>
+            <span className="pub-tab-raised__label">{locale === "id" ? "Lapor" : "Report"}</span>
+          </NavLink>
+          {TABS.slice(2).map((t) => (
             <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => `pub-tab${isActive ? " active" : ""}`}>
               <Icon name={t.icon} size={20} />
               <span>{t.label[locale]}</span>

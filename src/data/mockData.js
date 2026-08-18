@@ -105,6 +105,34 @@ export function siteById(id) {
   return SITES.find((s) => s.id === id);
 }
 
+function toRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+// Great-circle distance in km between two lat/lng points.
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Nearest known monitoring site to an arbitrary point, or null if no
+// coordinates are available (e.g. a citizen report where geolocation was
+// denied). Used to give a citizen report context without requiring the
+// reporter to know which official site they're near — a report with no
+// nearby site is itself a signal of a monitoring coverage gap.
+export function nearestSite(lat, lng) {
+  if (lat == null || lng == null) return null;
+  let best = null;
+  for (const site of SITES) {
+    const distanceKm = haversineKm(lat, lng, site.lat, site.lng);
+    if (!best || distanceKm < best.distanceKm) best = { site, distanceKm: Math.round(distanceKm * 10) / 10 };
+  }
+  return best;
+}
+
 // --- devices / nodes ----------------------------------------------------
 const DEVICE_TYPES = ["Water Level Sensor (AWLR)", "Rain Gauge (ARR)", "EWS Siren"];
 
@@ -257,6 +285,20 @@ export const WARNINGS = [
       { action: "Cancelled — rain did not materialize", by: "Dedi Kurniawan (BMKG)", at: isoHoursAgo(7.5) },
     ],
   },
+  {
+    id: "w-09",
+    siteId: "site-07",
+    status: "yellow",
+    source: "citizen_report",
+    originReportId: "cr-05",
+    triggeredAt: isoHoursAgo(1.5),
+    resolved: false,
+    dissemination: [{ point: "Balai Desa Batang Anai Tengah", channel: "SMS Blast", status: "confirmed" }],
+    history: [
+      { action: "Citizen report received near SD Negeri 05 Batang Anai", by: "system", at: isoHoursAgo(1.7) },
+      { action: "Warning created from a citizen report", by: "Rian Saputra (BPBD Sumbar)", at: isoHoursAgo(1.5) },
+    ],
+  },
 ];
 
 export function warningsForSite(siteId) {
@@ -285,6 +327,112 @@ export const PUBLIC_ALERTS = [
   { id: "pa-6", siteId: "site-08", status: "yellow", title: "[Selesai] Status WASPADA di Batang Anai - Hilir", message: "Ketinggian air telah kembali normal.", time: isoHoursAgo(4.8) },
 ];
 
+// --- citizen reports ----------------------------------------------------
+// Deterministic inline SVG placeholder so seed reports have "photos" without
+// needing binary image assets in the repo. Colour is seeded per report/photo
+// so it stays reload-stable, same convention as buildSeries/buildDeviceHealth.
+function placeholderPhoto(seed, idx) {
+  const rand = mulberry32(seedFromString(`${seed}-photo-${idx}`));
+  const hue = Math.round(rand() * 360);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"><rect width="240" height="180" fill="hsl(${hue},45%,55%)"/><rect width="240" height="56" y="124" fill="hsl(${hue},45%,32%)"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const CITIZEN_REPORT_SEEDS = [
+  {
+    id: "cr-01",
+    reporter: null,
+    locationDetail: "Dekat jembatan gantung, RT03 Ketaping, sekitar 500m dari Balai Desa",
+    description: "Air sungai naik cepat dalam 30 menit terakhir, beberapa rumah di bantaran mulai kemasukan air.",
+    photoCount: 2,
+    geolocation: { status: "granted", lat: -0.4706, lng: 100.3301, accuracyMeters: 15 },
+    connection: { supported: true, effectiveType: "4g", downlinkMbps: 7.1, saveData: false },
+    battery: { simulated: true, levelPercent: 54 },
+    workflowStatus: "new",
+    escalatedWarningId: null,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewNote: null,
+    submittedAt: isoHoursAgo(0.4),
+  },
+  {
+    id: "cr-02",
+    reporter: { name: "Akun Warga Contoh", email: "warga@example.id" },
+    locationDetail: "Sekitar Krueng Peusangan Hilir, dekat Balai Desa Peusangan Hilir",
+    description: "Air terlihat keruh dan naik pelan sejak sore, belum masuk ke pemukiman.",
+    photoCount: 1,
+    geolocation: { status: "denied", lat: null, lng: null, accuracyMeters: null },
+    connection: { supported: false, effectiveType: null, downlinkMbps: null, saveData: null },
+    battery: { simulated: true, levelPercent: 68 },
+    workflowStatus: "reviewed",
+    escalatedWarningId: null,
+    reviewedBy: "Siti Rahma (BPBD Aceh)",
+    reviewedAt: isoHoursAgo(4.8),
+    reviewNote: "Dicatat sebagai pemantauan tambahan, belum memenuhi ambang siaga.",
+    submittedAt: isoHoursAgo(5.5),
+  },
+  {
+    id: "cr-03",
+    reporter: null,
+    locationDetail: "Kampung Alahan Panjang, dekat Danau Diatas, jauh dari pos pemantauan",
+    description: "Longsor kecil menutup sebagian jalan setelah hujan deras semalaman, sungai kecil di dekat kampung meluap.",
+    photoCount: 1,
+    geolocation: { status: "granted", lat: -1.08, lng: 100.72, accuracyMeters: 32 },
+    connection: { supported: true, effectiveType: "3g", downlinkMbps: 0.6, saveData: true },
+    battery: { simulated: true, levelPercent: 12 },
+    workflowStatus: "verified",
+    escalatedWarningId: null,
+    reviewedBy: "Rian Saputra (BPBD Sumbar)",
+    reviewedAt: isoHoursAgo(6.5),
+    reviewNote: "Dikonfirmasi lewat telepon dengan pelapor, kondisi sesuai laporan. Tim lapangan dikirim.",
+    submittedAt: isoHoursAgo(8.0),
+  },
+  {
+    id: "cr-04",
+    reporter: null,
+    locationDetail: "Belakang Puskesmas, dekat titik pemantauan Krueng Aceh Hulu",
+    description: "Ada genangan air cukup besar di halaman, khawatir itu luapan sungai.",
+    photoCount: 1,
+    geolocation: { status: "granted", lat: 5.355, lng: 95.548, accuracyMeters: 20 },
+    connection: { supported: true, effectiveType: "4g", downlinkMbps: 5.5, saveData: false },
+    battery: { simulated: true, levelPercent: 76 },
+    workflowStatus: "dismissed",
+    escalatedWarningId: null,
+    reviewedBy: "Siti Rahma (BPBD Aceh)",
+    reviewedAt: isoHoursAgo(2.5),
+    reviewNote: "Setelah dicek petugas, itu genangan air hujan biasa, bukan luapan sungai.",
+    submittedAt: isoHoursAgo(3.2),
+  },
+  {
+    id: "cr-05",
+    reporter: null,
+    locationDetail: "Dekat SD Negeri 05 Batang Anai, jalan utama menuju Tengah",
+    description: "Air mulai menggenangi jalan dan halaman sekolah, warga sekitar mulai waspada.",
+    photoCount: 2,
+    geolocation: { status: "granted", lat: -0.548, lng: 100.379, accuracyMeters: 12 },
+    connection: { supported: true, effectiveType: "4g", downlinkMbps: 4.2, saveData: false },
+    battery: { simulated: true, levelPercent: 63 },
+    workflowStatus: "escalated",
+    escalatedWarningId: "w-09",
+    reviewedBy: "Rian Saputra (BPBD Sumbar)",
+    reviewedAt: isoHoursAgo(1.5),
+    reviewNote: "Dikonfirmasi sesuai kondisi sensor, ditingkatkan menjadi peringatan resmi.",
+    submittedAt: isoHoursAgo(1.7),
+  },
+];
+
+export const CITIZEN_REPORTS = CITIZEN_REPORT_SEEDS.map((r) => {
+  const { geolocation, connection, battery, photoCount, ...rest } = r;
+  const nearest = nearestSite(geolocation.lat, geolocation.lng);
+  return {
+    ...rest,
+    nearestSiteId: nearest?.site.id ?? null,
+    nearestSiteDistanceKm: nearest?.distanceKm ?? null,
+    photos: Array.from({ length: photoCount }, (_, i) => ({ id: `${r.id}-photo-${i}`, url: placeholderPhoto(r.id, i) })),
+    deviceMeta: { geolocation, connection, battery },
+  };
+});
+
 export function timeAgo(iso, locale = "en") {
   const diffMs = NOW.getTime() - new Date(iso).getTime();
   const mins = Math.round(Math.abs(diffMs) / 60000);
@@ -299,6 +447,21 @@ export function timeAgo(iso, locale = "en") {
 
 export function formatClock(iso) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+}
+
+// Full date + time, for contexts where a fuzzy "X ago" label isn't precise
+// enough — e.g. triaging an unverified citizen report, where an operator
+// needs to know exactly when it came in. Reuses formatClock's colon-separated
+// time (id-ID would otherwise render "03.30" with a period) and only lets
+// locale vary the month name.
+export function formatDateTime(iso, locale = "en") {
+  const datePart = new Date(iso).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `${datePart}, ${formatClock(iso)}`;
 }
 
 export const NOW_ISO = NOW.toISOString();
