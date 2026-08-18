@@ -269,12 +269,6 @@ array like `Warning.history` — a citizen report triage isn't a compliance-grad
 record the way a Warning is, so one "last review" is enough for v1. Confirm with product before
 launch whether that's still true once reports carry legal/liability weight.
 
-Localization decision to make: the frontend is bilingual (ID/EN) but these strings are stored
-Indonesian-only. Either return `{ title_id, title_en, message_id, message_en }` and let the client
-pick by locale, or return pre-localized text based on an `Accept-Language` / `?locale=` parameter.
-Prefer the former — it lets one cached response serve both locales. Whichever you choose, decide
-before seeding production data; retrofitting translations onto existing rows is painful.
-
 ---
 
 ## 5. Endpoints
