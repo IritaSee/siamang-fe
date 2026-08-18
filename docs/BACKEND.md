@@ -288,6 +288,18 @@ Cache aggressively (30–60s). During a flood this is the traffic that spikes an
 over — it is the path citizens depend on. Put it behind a CDN and make sure a cache miss storm
 can't take the origin down.
 
+### Public (report submission — auth optional)
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/public/reports` | submit a citizen report — bearer token optional, never required |
+
+Accepts a `multipart/form-data` body (photos + fields) or JSON + a separate signed photo-upload
+step, your call. Whichever you pick, submission must succeed with only `description` present —
+every other field, including location, is optional by design (see §2's Citizen Report note). Do
+not add server-side validation that makes location or photos mandatory; that reintroduces exactly
+the login-wall friction the anonymous-reporting requirement exists to avoid.
+
 ### Public (authenticated citizen)
 
 | Method | Path | Purpose |
@@ -316,10 +328,19 @@ can't take the origin down.
 | GET | `/api/devices` | `Device[]`, `?status=`, `?q=` |
 | GET | `/api/devices/:id` | `Device` |
 | GET | `/api/devices/:id/health` | 14-day battery/signal history |
+| GET | `/api/reports` | `CitizenReport[]`, `?status=`, `?q=` |
+| GET | `/api/reports/:id` | `CitizenReport` |
+| PATCH | `/api/reports/:id/status` | → `{ status, note }` — Operator role or above (see §8) |
+| POST | `/api/reports/:id/escalate` | creates a `Warning` with `source: "citizen_report"` + `originReportId`, sets the report's `escalatedWarningId` |
 | GET | `/api/users` | `User[]` — **Admin only** |
 
 `/api/dashboard` exists because the Dashboard needs counts, active warnings, and silent nodes
 together; three round-trips on the screen operators stare at all day is the wrong trade.
+
+Note the frontend mockup's Escalate action does **not** exercise `/api/reports/:id/escalate`
+live — it only updates the report's own status, matching every other warning action in the mockup
+being toast-only rather than a real write (see AGENTS.md §9). This endpoint description is the
+real spec to build against, not something already proven out by the frontend.
 
 ### Ingest (device-facing, separate auth)
 
@@ -357,9 +378,12 @@ fixture set, because they were chosen deliberately:
 - 15 sites across 6 basins in 3 provinces, with upstream/midstream/downstream trios
 - At least one site per status, including **two `black` sites** (silent-node handling is the
   easiest thing to get wrong and the most important to demo)
-- Warnings covering all four `source` values, both resolved and active
+- Warnings covering all five `source` values (including `citizen_report`), both resolved and active
 - Dissemination rows in mixed `confirmed` / `pending` states
 - A device whose signal collapses to ~0 over the final 2 days, matching its `black` status
+- Citizen reports covering the full triage lifecycle, including at least one report with no nearby
+  site (a coverage gap) and one already escalated into a real Warning (the `originReportId` /
+  `escalatedWarningId` pair) — this is what proves the escalation flow actually round-trips
 
 The generator uses a seeded PRNG (`mulberry32`) specifically so runs are reproducible. Keep that
 in the seed script — reproducible seed data makes bug reports reproducible too.
@@ -372,6 +396,8 @@ Two distinct audiences; do not merge them into one user table with a role flag.
 
 **Citizens** (public app) — self-registered, own only favorites and notification preferences.
 Low-value accounts, high volume. Email/phone OTP is a good fit; avoid passwords if you can.
+Reporting an incident is deliberately **not** gated behind this account system — anonymous
+submission must keep working even if the auth service is degraded during an actual flood.
 
 **Staff** (operator console) — BNPB/BPBD/BMKG personnel, provisioned by an admin, never
 self-registered. Roles already modeled in the UI: `Admin`, `Operator`, `Forecaster`, `Viewer`.
@@ -385,6 +411,9 @@ Authorization rules the UI already assumes:
 - Every warning action records the acting user into `history.by`. This is an audit trail for
   evacuation orders — treat it as compliance-grade: append-only, attributable, never silently
   editable.
+- Citizen report triage (`PATCH /api/reports/:id/status`, `POST /api/reports/:id/escalate`)
+  follows the same `Operator`-or-above rule as warning actions. `Viewer` should be able to read
+  reports, not act on them.
 
 Staff auth should support SSO against government identity providers eventually. Don't build that
 in v1, but don't design something that makes it impossible either.
@@ -413,7 +442,9 @@ policies you skip now become a painful migration later. Decide retention up fron
 
 Listed so nobody rediscovers these as "missing": actual SMS/push delivery integration, offline
 support, the forecasting model itself (assume it exists and publishes to the API), hardware
-provisioning flows, and multi-tenancy across regencies. Confirm before building any of them.
+provisioning flows, multi-tenancy across regencies, photo storage/CDN for citizen report
+attachments, abuse/spam moderation for public submissions, and push notifications back to a
+reporter about their own report's status. Confirm before building any of them.
 
 ---
 
@@ -428,3 +459,4 @@ provisioning flows, and multi-tenancy across regencies. Confirm before building 
 - [ ] Role enforcement server-side, especially Viewer vs Operator on warning actions
 - [ ] Public read endpoints cached and load-tested at flood-event traffic
 - [ ] Seed script reproduces the demo dataset
+- [ ] Citizen report ingest, triage status transitions, and escalate-to-Warning wired per §4/§5
