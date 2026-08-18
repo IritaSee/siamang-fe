@@ -29,11 +29,17 @@ The landing page at `/` switches between the two apps this system comprises:
 
 **Operator / Admin Console** (`/operator`) — desktop-first, for BNPB / BPBD / BMKG staff at the
 operational service center. Dashboard, map of monitoring sites, site detail with sensor charts,
-warning management, device health, and user administration.
+warning management, device health, citizen report triage, and user administration.
 
 **Public Platform** (`/public`) — mobile-first, for at-risk communities. Site status browsing,
-map, alerts feed, and saved favorites. Demonstrates both logged-out and logged-in states; the
-"Masuk" button fakes a session so both can be shown.
+map, alerts feed, saved favorites, and incident reporting — the raised camera button in the tab
+bar lets anyone describe an incident, attach photos, and optionally share their location, with no
+login required. Demonstrates both logged-out and logged-in states; the "Masuk" button fakes a
+session so both can be shown.
+
+A report submitted on the Public Platform appears on the Operator Console's Citizen Reports screen
+live, in the same session — try it: submit a report, then switch to the Operator Console via the
+landing page and open **Citizen Reports**.
 
 Both apps are bilingual (Bahasa Indonesia / English) via the toggle in the header. Indonesian is
 the default.

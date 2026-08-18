@@ -23,7 +23,7 @@ local dev, offline demos, and seeding — see §3.
 
 ## 2. Domain model (read before designing tables)
 
-Four concepts, in dependency order.
+Five concepts, in dependency order.
 
 **Site** — a monitoring point on a river. Has a fixed position in the basin (`upstream` /
 `midstream` / `downstream`) and a *current* risk status. A basin has multiple sites; upstream
@@ -38,6 +38,16 @@ High volume, append-only, time-series shaped. This is the table that will domina
 **Warning** — a risk event at a site. Has a trigger source, a lifecycle (active → resolved),
 a dissemination fan-out (which loudspeakers/channels were notified and whether delivery was
 confirmed), and an audit history of every manual action taken on it.
+
+**Citizen Report** — an unauthenticated-or-optionally-authenticated incident report submitted by
+the public, distinct from both `Warning` (system/operator-originated, verified) and `PublicAlert`
+(system-to-citizen, plain language). May reference a `Site` via a computed nearest-match, or none
+at all — the latter is itself a signal of a monitoring coverage gap, not a data-quality problem to
+paper over. Carries a triage workflow (`new → reviewed/verified/dismissed/escalated`) separate
+from flood risk status, plus device-reported metadata (location, connection, battery) that gives
+an operator reliability context on the report, not a computed severity score — the backend should
+resist the temptation to auto-derive "how bad is this" from that metadata; that's a human triage
+call.
 
 ### Status derivation is a backend responsibility
 
@@ -169,7 +179,8 @@ Units: `rainfall` mm/h, `waterLevel` cm, `flow` m³/s. Keep them — axis labels
   "id": "w-01",
   "siteId": "site-08",
   "status": "red",
-  "source": "central_forecast",   // sensor_threshold | central_forecast | manual | liveness_monitor
+  "source": "central_forecast",   // sensor_threshold | central_forecast | manual | liveness_monitor | citizen_report
+  "originReportId": null,         // set only when source is "citizen_report" — the Citizen Report id
   "triggeredAt": "2026-08-12T02:36:00Z",
   "resolved": false,
   "resolvedAt": null,             // set when resolved
@@ -221,11 +232,42 @@ Citizen-facing message, distinct from the operator `Warning` — plain language,
 }
 ```
 
-Localization decision to make: the frontend is bilingual (ID/EN) but these strings are stored
-Indonesian-only. Either return `{ title_id, title_en, message_id, message_en }` and let the client
-pick by locale, or return pre-localized text based on an `Accept-Language` / `?locale=` parameter.
-Prefer the former — it lets one cached response serve both locales. Whichever you choose, decide
-before seeding production data; retrofitting translations onto existing rows is painful.
+Localization note: the frontend is bilingual but this shape is Indonesian-only. Prefer returning
+`{ title_id, title_en, message_id, message_en }` (or resolving server-side by `?locale=`) before
+production data exists — retrofitting translations onto live rows later is painful.
+
+### Citizen report
+
+```jsonc
+{
+  "id": "cr-01",
+  "reporter": { "name": "...", "email": "..." },  // null if anonymous — reporting never requires login
+  "locationDetail": "Dekat jembatan gantung, RT03 Ketaping, sekitar 500m dari Balai Desa",
+  "nearestSiteId": "site-08",           // computed server-side via nearest-match at submission time
+  "nearestSiteDistanceKm": 1.1,          // null if no site is nearby, or geolocation wasn't available
+  "description": "Air sungai naik cepat dalam 30 menit terakhir...",
+  "photos": [{ "id": "cr-01-photo-0", "url": "https://cdn.example/..." }],
+  "deviceMeta": {
+    "geolocation": { "status": "granted", "lat": -0.4706, "lng": 100.3301, "accuracyMeters": 15 },
+    // status: granted | denied | unavailable | not_requested — lat/lng/accuracyMeters null unless "granted"
+    "connection": { "supported": true, "effectiveType": "4g", "downlinkMbps": 7.1, "saveData": false },
+    // supported: false on browsers with no Network Information API (Safari/Firefox) — never faked
+    "battery": { "simulated": true, "levelPercent": 54 }
+    // always simulated from the web client — see the mockup note above; a native app could report real values
+  },
+  "workflowStatus": "new",              // new | reviewed | verified | dismissed | escalated
+  "escalatedWarningId": null,           // set when workflowStatus is "escalated" and a Warning was created
+  "reviewedBy": null,                   // display name of the staff member who last acted on this report
+  "reviewedAt": null,
+  "reviewNote": null,
+  "submittedAt": "2026-08-12T03:12:00Z"
+}
+```
+
+`reviewedBy`/`reviewedAt`/`reviewNote` are single last-action fields, not an append-only history
+array like `Warning.history` — a citizen report triage isn't a compliance-grade evacuation-order
+record the way a Warning is, so one "last review" is enough for v1. Confirm with product before
+launch whether that's still true once reports carry legal/liability weight.
 
 ---
 
@@ -245,6 +287,18 @@ Suggested REST surface. Everything under `/api`.
 Cache aggressively (30–60s). During a flood this is the traffic that spikes and it must not fall
 over — it is the path citizens depend on. Put it behind a CDN and make sure a cache miss storm
 can't take the origin down.
+
+### Public (report submission — auth optional)
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/public/reports` | submit a citizen report — bearer token optional, never required |
+
+Accepts a `multipart/form-data` body (photos + fields) or JSON + a separate signed photo-upload
+step, your call. Whichever you pick, submission must succeed with only `description` present —
+every other field, including location, is optional by design (see §2's Citizen Report note). Do
+not add server-side validation that makes location or photos mandatory; that reintroduces exactly
+the login-wall friction the anonymous-reporting requirement exists to avoid.
 
 ### Public (authenticated citizen)
 
@@ -274,10 +328,19 @@ can't take the origin down.
 | GET | `/api/devices` | `Device[]`, `?status=`, `?q=` |
 | GET | `/api/devices/:id` | `Device` |
 | GET | `/api/devices/:id/health` | 14-day battery/signal history |
+| GET | `/api/reports` | `CitizenReport[]`, `?status=`, `?q=` |
+| GET | `/api/reports/:id` | `CitizenReport` |
+| PATCH | `/api/reports/:id/status` | → `{ status, note }` — Operator role or above (see §8) |
+| POST | `/api/reports/:id/escalate` | creates a `Warning` with `source: "citizen_report"` + `originReportId`, sets the report's `escalatedWarningId` |
 | GET | `/api/users` | `User[]` — **Admin only** |
 
 `/api/dashboard` exists because the Dashboard needs counts, active warnings, and silent nodes
 together; three round-trips on the screen operators stare at all day is the wrong trade.
+
+Note the frontend mockup's Escalate action does **not** exercise `/api/reports/:id/escalate`
+live — it only updates the report's own status, matching every other warning action in the mockup
+being toast-only rather than a real write (see AGENTS.md §9). This endpoint description is the
+real spec to build against, not something already proven out by the frontend.
 
 ### Ingest (device-facing, separate auth)
 
@@ -315,9 +378,12 @@ fixture set, because they were chosen deliberately:
 - 15 sites across 6 basins in 3 provinces, with upstream/midstream/downstream trios
 - At least one site per status, including **two `black` sites** (silent-node handling is the
   easiest thing to get wrong and the most important to demo)
-- Warnings covering all four `source` values, both resolved and active
+- Warnings covering all five `source` values (including `citizen_report`), both resolved and active
 - Dissemination rows in mixed `confirmed` / `pending` states
 - A device whose signal collapses to ~0 over the final 2 days, matching its `black` status
+- Citizen reports covering the full triage lifecycle, including at least one report with no nearby
+  site (a coverage gap) and one already escalated into a real Warning (the `originReportId` /
+  `escalatedWarningId` pair) — this is what proves the escalation flow actually round-trips
 
 The generator uses a seeded PRNG (`mulberry32`) specifically so runs are reproducible. Keep that
 in the seed script — reproducible seed data makes bug reports reproducible too.
@@ -330,6 +396,8 @@ Two distinct audiences; do not merge them into one user table with a role flag.
 
 **Citizens** (public app) — self-registered, own only favorites and notification preferences.
 Low-value accounts, high volume. Email/phone OTP is a good fit; avoid passwords if you can.
+Reporting an incident is deliberately **not** gated behind this account system — anonymous
+submission must keep working even if the auth service is degraded during an actual flood.
 
 **Staff** (operator console) — BNPB/BPBD/BMKG personnel, provisioned by an admin, never
 self-registered. Roles already modeled in the UI: `Admin`, `Operator`, `Forecaster`, `Viewer`.
@@ -343,6 +411,9 @@ Authorization rules the UI already assumes:
 - Every warning action records the acting user into `history.by`. This is an audit trail for
   evacuation orders — treat it as compliance-grade: append-only, attributable, never silently
   editable.
+- Citizen report triage (`PATCH /api/reports/:id/status`, `POST /api/reports/:id/escalate`)
+  follows the same `Operator`-or-above rule as warning actions. `Viewer` should be able to read
+  reports, not act on them.
 
 Staff auth should support SSO against government identity providers eventually. Don't build that
 in v1, but don't design something that makes it impossible either.
@@ -371,7 +442,9 @@ policies you skip now become a painful migration later. Decide retention up fron
 
 Listed so nobody rediscovers these as "missing": actual SMS/push delivery integration, offline
 support, the forecasting model itself (assume it exists and publishes to the API), hardware
-provisioning flows, and multi-tenancy across regencies. Confirm before building any of them.
+provisioning flows, multi-tenancy across regencies, photo storage/CDN for citizen report
+attachments, abuse/spam moderation for public submissions, and push notifications back to a
+reporter about their own report's status. Confirm before building any of them.
 
 ---
 
@@ -386,3 +459,4 @@ provisioning flows, and multi-tenancy across regencies. Confirm before building 
 - [ ] Role enforcement server-side, especially Viewer vs Operator on warning actions
 - [ ] Public read endpoints cached and load-tested at flood-event traffic
 - [ ] Seed script reproduces the demo dataset
+- [ ] Citizen report ingest, triage status transitions, and escalate-to-Warning wired per §4/§5
