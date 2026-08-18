@@ -3,6 +3,7 @@ import Icon from "../components/Icon";
 import LanguageToggle from "../components/LanguageToggle";
 import { WARNINGS, SITES } from "../data/mockData";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useReports } from "../reports/ReportsContext";
 import "./OperatorLayout.css";
 import "../operator/operator.css";
 
@@ -10,6 +11,7 @@ const NAV = [
   { to: "/operator", end: true, icon: "grid", label: { id: "Dasbor", en: "Dashboard" } },
   { to: "/operator/map", icon: "map", label: { id: "Peta / Titik", en: "Map / Sites" } },
   { to: "/operator/warnings", icon: "bell", label: { id: "Peringatan", en: "Warnings" } },
+  { to: "/operator/reports", icon: "camera", label: { id: "Laporan Warga", en: "Citizen Reports" } },
   { to: "/operator/devices", icon: "cpu", label: { id: "Perangkat", en: "Devices" } },
   { to: "/operator/users", icon: "users", label: { id: "Pengguna", en: "Users" } },
 ];
@@ -17,8 +19,10 @@ const NAV = [
 export default function OperatorLayout() {
   const { locale } = useLanguage();
   const location = useLocation();
+  const { reports } = useReports();
   const activeWarnings = WARNINGS.filter((w) => !w.resolved).length;
   const silentSites = SITES.filter((s) => s.status === "black").length;
+  const newReports = reports.filter((r) => r.workflowStatus === "new").length;
   const current = [...NAV].reverse().find((n) => location.pathname.startsWith(n.to) && (!n.end || location.pathname === n.to));
 
   return (
@@ -42,6 +46,7 @@ export default function OperatorLayout() {
               <Icon name={item.icon} size={17} />
               <span>{item.label[locale]}</span>
               {item.to === "/operator/warnings" && activeWarnings > 0 ? <span className="op-navitem__badge">{activeWarnings}</span> : null}
+              {item.to === "/operator/reports" && newReports > 0 ? <span className="op-navitem__badge">{newReports}</span> : null}
               {item.to === "/operator/devices" && silentSites > 0 ? <span className="op-navitem__badge op-navitem__badge--muted">{silentSites}</span> : null}
             </NavLink>
           ))}

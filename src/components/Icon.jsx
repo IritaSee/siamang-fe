@@ -29,6 +29,8 @@ const PATHS = {
   check: "M20 6 9 17l-5-5",
   info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 11v6 M12 7.5v.01",
   building: "M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16 M13 21V9h5a1 1 0 0 1 1 1v11 M8 7h1M8 10h1M8 13h1M3 21h18",
+  camera: "M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  "map-pin": "M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z M12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 2, className = "" }) {

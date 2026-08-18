@@ -10,6 +10,7 @@ const SOURCE_LABEL = {
   central_forecast: { id: "Prakiraan pusat", en: "Central forecast" },
   manual: { id: "Manual", en: "Manual" },
   liveness_monitor: { id: "Monitor keaktifan", en: "Liveness monitor" },
+  citizen_report: { id: "Laporan warga", en: "Citizen report" },
 };
 
 export default function Warnings() {

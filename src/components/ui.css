@@ -127,7 +127,8 @@
 }
 
 .select,
-.text-input {
+.text-input,
+.textarea {
   width: 100%;
   border: 1px solid var(--ink-200);
   background: var(--white);
@@ -138,9 +139,15 @@
   font-family: inherit;
 }
 .select:focus,
-.text-input:focus {
+.text-input:focus,
+.textarea:focus {
   outline: 2px solid var(--brand-500);
   outline-offset: 1px;
+}
+.textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
 }
 
 .data-table {
@@ -253,6 +260,35 @@
   padding: 3px 10px;
   font-size: 11.5px;
   font-weight: 700;
+}
+
+/* Flags whether a captured metadata value is real (came from a live browser
+   API), simulated (faked but clearly labeled — e.g. battery, since the real
+   Battery Status API was removed from browsers), or unavailable (the API
+   exists but this browser/device doesn't support it — never faked). */
+.meta-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.meta-flag--real {
+  background: var(--accent-100);
+  color: var(--accent);
+}
+.meta-flag--simulated {
+  background: var(--ink-100);
+  color: var(--ink-500);
+}
+.meta-flag--unavailable {
+  background: var(--ink-50);
+  color: var(--ink-300);
+  border: 1px dashed var(--ink-200);
 }
 
 .empty-state {
