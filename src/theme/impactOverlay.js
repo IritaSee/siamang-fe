@@ -1,18 +1,48 @@
-import { INTENSITY_BY_STATUS } from "../data/mockData";
+import { INTENSITY_BY_STATUS, SITES, mulberry32, seedFromString } from "../data/mockData";
 
-// Illustrative mockup only — see docs/BACKEND.md. A real integration would
-// receive actual geometry (GeoJSON polygon/multipolygon, or a raster tile
-// URL) per forecast run from the vendor's flood-impact model; this computes
-// a soft circular glow from data that already exists in this mockup
-// (site status + the existing sensor forecast trend) so the concept can be
-// demoed without inventing a parallel fake dataset.
-//
-// Radii are returned in PIXELS, not meters, and deliberately zoom-independent
-// — the map (SiteMap.jsx) swings between zoom 6 (multi-site overview) and
-// zoom 12 (after flyToSelected), a 64x pixel-scale range, so a flat meters
-// value would be invisible at one end and absurd at the other. SiteMap.jsx
-// converts these pixel targets to live meters based on the map's current
-// zoom.
+const POSITION_RANK = { upstream: 0, midstream: 1, downstream: 2 };
+
+// Illustrative mockup only — see docs/BACKEND.md. There's no real elevation
+// data available here (OpenTopoMap is a rendered tile image, not a queryable
+// terrain dataset), so "flows toward lower elevation" is approximated using
+// each basin's own upstream -> downstream site positions — real domain data
+// already in SITES, and a reasonable proxy since downstream sites really are
+// further toward sea level. A real integration would derive this from the
+// vendor model's own geometry or an actual elevation/DEM source, not this
+// heuristic.
+function basinFlowDirection(site) {
+  const basinSites = SITES.filter((s) => s.basin === site.basin);
+  let up = basinSites[0];
+  let down = basinSites[0];
+  for (const s of basinSites) {
+    if (POSITION_RANK[s.position] < POSITION_RANK[up.position]) up = s;
+    if (POSITION_RANK[s.position] > POSITION_RANK[down.position]) down = s;
+  }
+  if (up === down) return null; // basin has only one distinct position — no direction to derive
+
+  const avgLatRad = ((up.lat + down.lat) / 2) * (Math.PI / 180);
+  const dx = (down.lng - up.lng) * Math.cos(avgLatRad); // eastward component
+  const dy = down.lat - up.lat; // northward component
+  const length = Math.hypot(dx, dy);
+  if (length === 0) return null;
+
+  // Screen-space direction (x right, y down — flip the northward component
+  // since geographic north is "up"/negative-y on an unrotated Leaflet map).
+  return { x: dx / length, y: -dy / length };
+}
+
+// Averages each value with its neighbours so a jittered ring of points reads
+// as an organic blob outline rather than a jagged star.
+function smooth(values) {
+  return values.map((v, i) => (values[(i - 1 + values.length) % values.length] + v + values[(i + 1) % values.length]) / 3);
+}
+
+// Radii/positions are computed in PIXELS, not meters, and deliberately
+// zoom-independent — the map (SiteMap.jsx) swings between zoom 6 (multi-site
+// overview) and zoom 12 (after flyToSelected), a 64x pixel-scale range, so a
+// flat meters value would be invisible at one end and absurd at the other.
+// SiteMap.jsx converts these pixel targets to screen positions based on the
+// map's current zoom.
 export function computeImpactFootprint(site, seriesForSite, mode = "now") {
   // A silent sensor can't feed a confident prediction — don't extrapolate
   // one. Same principle as AGENTS.md §5's "black is unknown, not severe."
@@ -29,14 +59,25 @@ export function computeImpactFootprint(site, seriesForSite, mode = "now") {
     multiplier = delta > 4 ? 1.35 : delta < -4 ? 0.85 : 1.05;
   }
 
-  const outerPx = (22 + intensity * 55) * multiplier;
+  const radiusPx = (22 + intensity * 55) * multiplier;
+
+  const vertexCount = 14;
+  const rand = mulberry32(seedFromString(`${site.id}-impact`));
+  const rawJitter = Array.from({ length: vertexCount }, () => 0.85 + rand() * 0.3); // 0.85-1.15
+  const jitters = smooth(smooth(rawJitter));
 
   return {
     intensity,
-    rings: [
-      { radiusPx: outerPx, fillColor: "var(--impact-glow-1)", fillOpacity: 0.1 },
-      { radiusPx: outerPx * 0.62, fillColor: "var(--impact-glow-2)", fillOpacity: 0.18 },
-      { radiusPx: outerPx * 0.32, fillColor: "var(--impact-glow-3)", fillOpacity: 0.3 },
-    ],
+    vertexCount,
+    radiusPx,
+    jitters,
+    // Direction this site's basin flows downstream, in screen-space units —
+    // null if it couldn't be derived, in which case the polygon renders as a
+    // plain organic blob with no directional bias.
+    flowDir: basinFlowDirection(site),
+    fillColor: intensity < 0.4 ? "var(--impact-glow-1)" : intensity < 0.65 ? "var(--impact-glow-2)" : "var(--impact-glow-3)",
+    fillOpacity: 0.12 + intensity * 0.22,
+    strokeColor: "var(--impact-glow-3)",
+    strokeOpacity: 0.45,
   };
 }

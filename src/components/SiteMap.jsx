@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvent } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, useMapEvent } from "react-leaflet";
+import L from "leaflet";
 import { useEffect, useState } from "react";
 import { riskDivIcon } from "./mapIcons";
 import StatusBadge from "./StatusBadge";
@@ -32,28 +33,52 @@ function FlyTo({ center, zoom }) {
   return null;
 }
 
-// Renders the flood-impact glow rings. Footprint radii come in as pixels
-// (see theme/impactOverlay.js) and are converted to live meters here based
-// on the map's current zoom, since a single map instance can swing from
-// zoom 6 (multi-site overview) to zoom 12 (after flyToSelected) — a flat
-// meters value would be invisible at one end and absurd at the other.
-function ImpactRings({ sites, impactFootprints }) {
+// Renders each site's predicted-impact zone as a single irregular polygon,
+// elongated toward its basin's downstream direction (see
+// theme/impactOverlay.js — there's no real elevation data to query here, so
+// this is a proxy using the basin's own upstream/downstream site positions).
+// Vertex offsets come in as pixels and are placed via the map's own
+// layerPoint <-> latLng projection, not a meters/degrees approximation, so
+// they stay correct at any zoom without extra math here. The `zoom` state
+// itself is only read to force a re-render on zoomend — map.latLngToLayerPoint
+// always reflects the map's live state regardless.
+function ImpactZones({ sites, impactFootprints }) {
   const map = useMap();
-  const [zoom, setZoom] = useState(map.getZoom());
+  const [, setZoom] = useState(map.getZoom());
   useMapEvent("zoomend", () => setZoom(map.getZoom()));
 
   return sites.flatMap((site) => {
     const footprint = impactFootprints[site.id];
     if (!footprint) return [];
-    const metersPerPixel = (156543.03392 * Math.cos((site.lat * Math.PI) / 180)) / 2 ** zoom;
-    return footprint.rings.map((ring, i) => (
-      <Circle
-        key={`${site.id}-ring-${i}`}
-        center={[site.lat, site.lng]}
-        radius={ring.radiusPx * metersPerPixel}
-        pathOptions={{ fillColor: ring.fillColor, fillOpacity: ring.fillOpacity, stroke: false, interactive: false }}
+
+    const centerPoint = map.latLngToLayerPoint([site.lat, site.lng]);
+    const positions = footprint.jitters.map((jitter, i) => {
+      const angle = (i / footprint.vertexCount) * 2 * Math.PI;
+      const vx = Math.cos(angle);
+      const vy = Math.sin(angle);
+      // Vertices pointing toward the flow direction get stretched further
+      // out, ones pointing upstream get pulled in — a soft teardrop shape
+      // rather than a symmetric blob.
+      const alignment = footprint.flowDir ? vx * footprint.flowDir.x + vy * footprint.flowDir.y : 0;
+      const elongation = 1 + 0.6 * alignment;
+      const r = footprint.radiusPx * jitter * elongation;
+      return map.layerPointToLatLng(L.point(centerPoint.x + r * vx, centerPoint.y + r * vy));
+    });
+
+    return (
+      <Polygon
+        key={site.id}
+        positions={positions}
+        pathOptions={{
+          fillColor: footprint.fillColor,
+          fillOpacity: footprint.fillOpacity,
+          color: footprint.strokeColor,
+          opacity: footprint.strokeOpacity,
+          weight: 1.5,
+          interactive: false,
+        }}
       />
-    ));
+    );
   });
 }
 
@@ -78,7 +103,7 @@ export default function SiteMap({
       <MapContainer center={center} zoom={zoom} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
         <TileLayer attribution={tile.attribution} url={tile.url} />
         {flyToSelected && selectedSite ? <FlyTo center={[selectedSite.lat, selectedSite.lng]} zoom={12} /> : null}
-        {impactFootprints ? <ImpactRings sites={sites} impactFootprints={impactFootprints} /> : null}
+        {impactFootprints ? <ImpactZones sites={sites} impactFootprints={impactFootprints} /> : null}
         {sites.map((site) => (
           <Marker
             key={site.id}

@@ -5,7 +5,7 @@
 const NOW = new Date("2026-08-12T03:30:00Z");
 
 // --- tiny seeded PRNG so charts look the same on every render/reload ------
-function mulberry32(seed) {
+export function mulberry32(seed) {
   let a = seed;
   return function () {
     a |= 0;
@@ -15,7 +15,7 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-function seedFromString(str) {
+export function seedFromString(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
   return h;
