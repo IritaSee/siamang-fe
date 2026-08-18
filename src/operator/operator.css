@@ -361,3 +361,22 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* --- Flood-impact overlay legend (ImpactLegend.jsx) --------------------- */
+
+.impact-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-500);
+  line-height: 1.4;
+}
+.impact-legend__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: radial-gradient(circle, var(--impact-glow-3), var(--impact-glow-2), var(--impact-glow-1));
+}

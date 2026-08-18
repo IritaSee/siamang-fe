@@ -73,7 +73,7 @@ function buildSeries(siteId, intensity) {
   return { now: nowPoints, forecast: forecastPoints };
 }
 
-const INTENSITY_BY_STATUS = { green: 0.1, yellow: 0.35, orange: 0.55, red: 0.85, black: 0.5 };
+export const INTENSITY_BY_STATUS = { green: 0.1, yellow: 0.35, orange: 0.55, red: 0.85, black: 0.5 };
 
 // --- sites ------------------------------------------------------------
 export const SITES = [

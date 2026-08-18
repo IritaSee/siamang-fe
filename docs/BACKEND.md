@@ -135,6 +135,15 @@ Timestamps are ISO 8601 UTC strings. IDs are opaque strings.
 }
 ```
 
+**Flood-impact overlay is a frontend mockup illustration, not a real contract.** The Operator
+Console's map (`src/theme/impactOverlay.js`) draws a soft circular glow per site, sized from
+`status` + the existing forecast trend, meant to represent a vendor's AI flood-impact prediction —
+this is a placeholder for a real integration, not something to productionize as-is. A real vendor
+model would return actual geometry (GeoJSON `Polygon`/`MultiPolygon`) or a raster/heatmap tile URL
+per forecast run, keyed to a site or an arbitrary area — not a computed circle. When that
+integration exists, the frontend's circle math should be discarded wholesale, not incrementally
+adapted. No `Site` field should be added for this until the real shape is known.
+
 ### Device
 
 ```jsonc
@@ -441,8 +450,10 @@ policies you skip now become a painful migration later. Decide retention up fron
 ## 10. Deliberately out of scope for v1
 
 Listed so nobody rediscovers these as "missing": actual SMS/push delivery integration, offline
-support, the forecasting model itself (assume it exists and publishes to the API), hardware
-provisioning flows, multi-tenancy across regencies, photo storage/CDN for citizen report
+support, the forecasting model itself (assume it exists and publishes to the API), the real
+vendor flood-impact/AI-prediction integration (assume it doesn't exist yet — the frontend's
+circular glow overlay is an illustrative placeholder, not something to wire a real feed into),
+hardware provisioning flows, multi-tenancy across regencies, photo storage/CDN for citizen report
 attachments, abuse/spam moderation for public submissions, and push notifications back to a
 reporter about their own report's status. Confirm before building any of them.
 

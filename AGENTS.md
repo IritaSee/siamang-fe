@@ -53,7 +53,7 @@ and accepted** for a mockup. Do not "fix" it with code-splitting unless asked.
 | Build | Vite 8 | |
 | UI | React 19, **plain JS + JSX** | No TypeScript. Don't introduce it unprompted. |
 | Routing | react-router-dom 7 | `BrowserRouter`, routes all in `src/App.jsx` |
-| Maps | Leaflet 1.9 + react-leaflet 5 | OpenStreetMap raster tiles |
+| Maps | Leaflet 1.9 + react-leaflet 5 | OpenStreetMap raster tiles; OpenTopoMap contour tiles on operator maps only (see §5, §10) |
 | Charts | Chart.js 4 + react-chartjs-2 | Registered once in `src/chartSetup.js` |
 | Styling | **Plain CSS + CSS custom properties** | No Tailwind, no CSS-in-JS |
 | Lint | oxlint | |
@@ -81,6 +81,7 @@ src/
   chartSetup.js            Chart.js registration (import for side effect)
 
   theme/riskLevels.js      ** the risk-status source of truth — see §5 **
+  theme/impactOverlay.js   flood-impact glow computation (operator maps only, see §5, §10)
   i18n/LanguageContext.jsx global ID/EN locale state (see §6)
   reports/ReportsContext.jsx cross-app citizen-report state (see §9)
   data/mockData.js         ALL mock data (see §7)
@@ -100,7 +101,7 @@ src/
 
   operator/   Dashboard, OperatorMap, SiteDetail, Warnings, WarningDetail,
               Devices, DeviceDetail, Users, CitizenReports, CitizenReportDetail,
-              operator.css
+              ImpactLegend, operator.css
   public/     PublicHome, PublicMap, PublicSiteDetail, PublicAlerts,
               PublicSettings, PublicReport, LoginPromptModal,
               PublicAuthContext.jsx, public.css
@@ -139,6 +140,13 @@ Three invariants, all load-bearing:
    rather than styling a colored dot yourself.
 3. **Risk colors are reserved.** `--risk-*` tokens mean status and nothing else. Brand chrome uses
    `--brand-*`. Never use the risk red for a "delete" button or the risk green for a success toast.
+
+**Adjacent but deliberately separate**: the operator maps' flood-impact glow overlay
+(`theme/impactOverlay.js`) uses its own `--impact-glow-1/2/3` tokens (`index.css`), not `--risk-*`
+— it's a different concept (a spatial prediction, not a point status) even though it shares the
+same warm-thermal hue family by design. It also follows invariant 1's spirit: `black`-status sites
+get no overlay at all, same "unknown, don't extrapolate" reasoning, computed via `null` return
+rather than `FLOOD_SEVERITY_ORDER` exclusion since it isn't part of that ordering to begin with.
 
 ---
 
@@ -297,6 +305,16 @@ from browsers. See `.meta-flag--real` / `--simulated` / `--unavailable` in `ui.c
 - **The Battery Status API is deprecated and removed from modern browsers.** Any on-screen battery
   reading in this app is simulated — don't try to wire up a real one, and don't drop the
   "Simulated" label if you touch that UI.
+- **The flood-impact overlay's circle radii are pixels, not meters, until `SiteMap.jsx` converts
+  them.** `SiteMap`'s map instance swings between zoom 6 (the multi-site overview) and zoom 12
+  (`FlyTo` hardcodes this once a site is selected) — a 64x pixel-scale range, so `computeImpactFootprint()`
+  deliberately returns zoom-independent pixel targets; only `SiteMap.jsx`'s internal `ImpactRings`
+  helper (tracks zoom via `useMapEvent("zoomend", ...)`) turns them into live meters. Don't
+  "simplify" this back to a flat meters value — it was tried and breaks one of the two zoom levels.
+- **CSS custom properties DO resolve inside Leaflet's `pathOptions`** (`fillColor: "var(--impact-glow-1)"`
+  works, confirmed live) — but only because `SiteMap.jsx`'s `MapContainer` uses Leaflet's default
+  SVG renderer. Its Canvas renderer does not resolve `var()`. Don't add `preferCanvas` to this map
+  without re-testing every color that depends on this.
 
 ---
 

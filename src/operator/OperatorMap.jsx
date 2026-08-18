@@ -5,7 +5,9 @@ import MapLegend from "../components/MapLegend";
 import StatusBadge from "../components/StatusBadge";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
-import { SITES, BASINS, timeAgo } from "../data/mockData";
+import ImpactLegend from "./ImpactLegend";
+import { SITES, SITE_SERIES, BASINS, timeAgo } from "../data/mockData";
+import { computeImpactFootprint } from "../theme/impactOverlay";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const POSITION_LABEL = {
@@ -18,8 +20,18 @@ export default function OperatorMap() {
   const { locale } = useLanguage();
   const [basin, setBasin] = useState("all");
   const [selected, setSelected] = useState(null);
+  const [mode, setMode] = useState("now");
 
   const sites = useMemo(() => (basin === "all" ? SITES : SITES.filter((s) => s.basin === basin)), [basin]);
+
+  const impactFootprints = useMemo(() => {
+    const result = {};
+    for (const site of sites) {
+      const footprint = computeImpactFootprint(site, SITE_SERIES[site.id], mode);
+      if (footprint) result[site.id] = footprint;
+    }
+    return result;
+  }, [sites, mode]);
 
   return (
     <div className="op-page">
@@ -47,6 +59,15 @@ export default function OperatorMap() {
         <Card className="op-map-list">
           <div className="op-map-list__legend">
             <MapLegend locale={locale} />
+            <ImpactLegend locale={locale} />
+            <div className="pill-tabs pill-tabs--ghost" style={{ marginTop: 10 }}>
+              <button className={mode === "now" ? "active" : ""} onClick={() => setMode("now")}>
+                {locale === "id" ? "Saat Ini" : "Now"}
+              </button>
+              <button className={mode === "forecast" ? "active" : ""} onClick={() => setMode("forecast")}>
+                {locale === "id" ? "Prakiraan" : "Forecast"}
+              </button>
+            </div>
           </div>
           <ul>
             {sites.map((site) => (
@@ -75,6 +96,8 @@ export default function OperatorMap() {
           flyToSelected
           height={620}
           locale={locale}
+          basemap="terrain"
+          impactFootprints={impactFootprints}
           renderPopupAction={(site) => (
             <Link to={`/operator/sites/${site.id}`} className="btn btn-primary btn-sm" style={{ width: "100%" }}>
               {locale === "id" ? "Buka detail titik" : "Open site details"}

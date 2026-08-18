@@ -24,6 +24,18 @@
   --risk-black: #111827;
   --risk-black-bg: #eceef1;
 
+  /* Flood-impact overlay (operator maps only) — a deliberately separate
+     concept from the risk-status colors above (AGENTS.md §5 invariant 3:
+     --risk-* tokens mean status and nothing else). Same warm-thermal family
+     on purpose but distinct hexes, since this is a soft blurred glow, not a
+     status badge. Referenced directly in Leaflet `pathOptions` via var() —
+     this only resolves because SiteMap.jsx uses Leaflet's default SVG
+     renderer; do not add `preferCanvas` to that map without revisiting.
+     Outer -> inner: pale amber -> orange -> deep red. */
+  --impact-glow-1: #fde68a;
+  --impact-glow-2: #fb923c;
+  --impact-glow-3: #b91c1c;
+
   /* Neutrals */
   --ink-900: #10151d;
   --ink-700: #38414f;
