@@ -23,7 +23,7 @@ local dev, offline demos, and seeding — see §3.
 
 ## 2. Domain model (read before designing tables)
 
-Four concepts, in dependency order.
+Five concepts, in dependency order.
 
 **Site** — a monitoring point on a river. Has a fixed position in the basin (`upstream` /
 `midstream` / `downstream`) and a *current* risk status. A basin has multiple sites; upstream
@@ -38,6 +38,16 @@ High volume, append-only, time-series shaped. This is the table that will domina
 **Warning** — a risk event at a site. Has a trigger source, a lifecycle (active → resolved),
 a dissemination fan-out (which loudspeakers/channels were notified and whether delivery was
 confirmed), and an audit history of every manual action taken on it.
+
+**Citizen Report** — an unauthenticated-or-optionally-authenticated incident report submitted by
+the public, distinct from both `Warning` (system/operator-originated, verified) and `PublicAlert`
+(system-to-citizen, plain language). May reference a `Site` via a computed nearest-match, or none
+at all — the latter is itself a signal of a monitoring coverage gap, not a data-quality problem to
+paper over. Carries a triage workflow (`new → reviewed/verified/dismissed/escalated`) separate
+from flood risk status, plus device-reported metadata (location, connection, battery) that gives
+an operator reliability context on the report, not a computed severity score — the backend should
+resist the temptation to auto-derive "how bad is this" from that metadata; that's a human triage
+call.
 
 ### Status derivation is a backend responsibility
 
@@ -169,7 +179,8 @@ Units: `rainfall` mm/h, `waterLevel` cm, `flow` m³/s. Keep them — axis labels
   "id": "w-01",
   "siteId": "site-08",
   "status": "red",
-  "source": "central_forecast",   // sensor_threshold | central_forecast | manual | liveness_monitor
+  "source": "central_forecast",   // sensor_threshold | central_forecast | manual | liveness_monitor | citizen_report
+  "originReportId": null,         // set only when source is "citizen_report" — the Citizen Report id
   "triggeredAt": "2026-08-12T02:36:00Z",
   "resolved": false,
   "resolvedAt": null,             // set when resolved
@@ -220,6 +231,43 @@ Citizen-facing message, distinct from the operator `Warning` — plain language,
   "time": "2026-08-12T02:36:00Z"
 }
 ```
+
+Localization note: the frontend is bilingual but this shape is Indonesian-only. Prefer returning
+`{ title_id, title_en, message_id, message_en }` (or resolving server-side by `?locale=`) before
+production data exists — retrofitting translations onto live rows later is painful.
+
+### Citizen report
+
+```jsonc
+{
+  "id": "cr-01",
+  "reporter": { "name": "...", "email": "..." },  // null if anonymous — reporting never requires login
+  "locationDetail": "Dekat jembatan gantung, RT03 Ketaping, sekitar 500m dari Balai Desa",
+  "nearestSiteId": "site-08",           // computed server-side via nearest-match at submission time
+  "nearestSiteDistanceKm": 1.1,          // null if no site is nearby, or geolocation wasn't available
+  "description": "Air sungai naik cepat dalam 30 menit terakhir...",
+  "photos": [{ "id": "cr-01-photo-0", "url": "https://cdn.example/..." }],
+  "deviceMeta": {
+    "geolocation": { "status": "granted", "lat": -0.4706, "lng": 100.3301, "accuracyMeters": 15 },
+    // status: granted | denied | unavailable | not_requested — lat/lng/accuracyMeters null unless "granted"
+    "connection": { "supported": true, "effectiveType": "4g", "downlinkMbps": 7.1, "saveData": false },
+    // supported: false on browsers with no Network Information API (Safari/Firefox) — never faked
+    "battery": { "simulated": true, "levelPercent": 54 }
+    // always simulated from the web client — see the mockup note above; a native app could report real values
+  },
+  "workflowStatus": "new",              // new | reviewed | verified | dismissed | escalated
+  "escalatedWarningId": null,           // set when workflowStatus is "escalated" and a Warning was created
+  "reviewedBy": null,                   // display name of the staff member who last acted on this report
+  "reviewedAt": null,
+  "reviewNote": null,
+  "submittedAt": "2026-08-12T03:12:00Z"
+}
+```
+
+`reviewedBy`/`reviewedAt`/`reviewNote` are single last-action fields, not an append-only history
+array like `Warning.history` — a citizen report triage isn't a compliance-grade evacuation-order
+record the way a Warning is, so one "last review" is enough for v1. Confirm with product before
+launch whether that's still true once reports carry legal/liability weight.
 
 Localization decision to make: the frontend is bilingual (ID/EN) but these strings are stored
 Indonesian-only. Either return `{ title_id, title_en, message_id, message_en }` and let the client
