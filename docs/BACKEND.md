@@ -464,7 +464,7 @@ policies you skip now become a painful migration later. Decide retention up fron
 Listed so nobody rediscovers these as "missing": actual SMS/push delivery integration, offline
 support, the forecasting model itself (assume it exists and publishes to the API), the real
 vendor flood-impact/AI-prediction integration (assume it doesn't exist yet — the frontend's
-circular glow overlay is an illustrative placeholder, not something to wire a real feed into),
+polygon overlay is an illustrative placeholder, not something to wire a real feed into),
 hardware provisioning flows, multi-tenancy across regencies, photo storage/CDN for citizen report
 attachments, abuse/spam moderation for public submissions, and push notifications back to a
 reporter about their own report's status. Confirm before building any of them.

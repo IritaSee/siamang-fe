@@ -313,15 +313,17 @@ from browsers. See `.meta-flag--real` / `--simulated` / `--unavailable` in `ui.c
 - **The Battery Status API is deprecated and removed from modern browsers.** Any on-screen battery
   reading in this app is simulated — don't try to wire up a real one, and don't drop the
   "Simulated" label if you touch that UI.
-- **The flood-impact overlay's polygon vertex offsets are pixels, not degrees, until `SiteMap.jsx`
-  converts them.** `SiteMap`'s map instance swings between zoom 6 (the multi-site overview) and
-  zoom 12 (`FlyTo` hardcodes this once a site is selected) — a 64x pixel-scale range, so
-  `computeImpactFootprint()` deliberately returns zoom-independent pixel targets; only
-  `SiteMap.jsx`'s internal `ImpactZones` helper places them, via
-  `map.latLngToLayerPoint`/`layerPointToLatLng` (Leaflet's own projection, not a hand-rolled
-  meters/degrees approximation) so they land correctly at any zoom, tracking zoom changes via
-  `useMapEvent("zoomend", ...)` to force a re-render. Don't "simplify" this to fixed lat/lng
-  offsets — it was tried (as circle radii in meters) and breaks one of the two zoom levels.
+- **The flood-impact overlay's polygon is real lat/lng geometry, sized in meters — not screen
+  pixels.** `computeImpactFootprint()` (`theme/impactOverlay.js`) returns fully-resolved
+  `positions`, computed once from a fixed real-world radius. This was **not** the first design: an
+  earlier version returned zoom-independent pixel targets that `SiteMap.jsx` re-projected on every
+  `zoomend` so the shape stayed a constant size on screen across the app's 64x zoom range (zoom 6
+  overview vs zoom 12 site detail). That made the polygon grow on screen when zooming **out** and
+  shrink when zooming **in** — backwards for something meant to represent a real geographic area,
+  which should scale exactly like the terrain and markers do. Don't reintroduce the pixel-target
+  version to "fix" zoom-6 visibility — a small/near-invisible footprint at the wide overview is the
+  *correct* behavior for a real-meters shape (matches how any real GIS hazard layer behaves at that
+  zoom), not a bug. The site status markers are already the primary signal at that zoom.
 - **CSS custom properties DO resolve inside Leaflet's `pathOptions`** (`fillColor: "var(--impact-glow-1)"`
   works, confirmed live) — but only because `SiteMap.jsx`'s `MapContainer` uses Leaflet's default
   SVG renderer. Its Canvas renderer does not resolve `var()`. Don't add `preferCanvas` to this map
