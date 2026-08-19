@@ -5,7 +5,7 @@
 const NOW = new Date("2026-08-12T03:30:00Z");
 
 // --- tiny seeded PRNG so charts look the same on every render/reload ------
-function mulberry32(seed) {
+export function mulberry32(seed) {
   let a = seed;
   return function () {
     a |= 0;
@@ -15,7 +15,7 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-function seedFromString(str) {
+export function seedFromString(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
   return h;
@@ -73,25 +73,38 @@ function buildSeries(siteId, intensity) {
   return { now: nowPoints, forecast: forecastPoints };
 }
 
-const INTENSITY_BY_STATUS = { green: 0.1, yellow: 0.35, orange: 0.55, red: 0.85, black: 0.5 };
+export const INTENSITY_BY_STATUS = { green: 0.1, yellow: 0.35, orange: 0.55, red: 0.85, black: 0.5 };
 
 // --- sites ------------------------------------------------------------
+// `elevationMeters` is real SRTM elevation (via opentopodata.org, srtm90m
+// dataset — the same source OpenTopoMap's own contour tiles are built from),
+// fetched once and baked in here rather than queried at runtime — this
+// mockup has no live network dependency anywhere else and shouldn't gain
+// one just for this. It's what theme/impactOverlay.js uses to derive each
+// basin's downhill flow direction (lowest/highest elevation site), NOT the
+// `position` label below — five of six basins' labels already agree with
+// real terrain, but Batang Anai's "downstream" site (site-08) actually sits
+// *higher* (938m) than its own midstream/upstream sites. Rather than move
+// site-08's coordinates (several already-tested warnings and citizen
+// reports are computed relative to its exact lat/lng), the flow-direction
+// heuristic trusts real elevation over the label, which quietly self-
+// corrects this one case without touching anything else.
 export const SITES = [
-  { id: "site-01", name: "Krueng Aceh - Hulu", basin: "Krueng Aceh", province: "Aceh", position: "upstream", lat: 5.352, lng: 95.552, status: "yellow", lastUpdated: isoHoursAgo(0.4) },
-  { id: "site-02", name: "Krueng Aceh - Tengah", basin: "Krueng Aceh", province: "Aceh", position: "midstream", lat: 5.451, lng: 95.447, status: "black", lastUpdated: isoHoursAgo(2.6) },
-  { id: "site-03", name: "Krueng Aceh - Hilir", basin: "Krueng Aceh", province: "Aceh", position: "downstream", lat: 5.552, lng: 95.318, status: "green", lastUpdated: isoHoursAgo(0.1) },
-  { id: "site-04", name: "Krueng Peusangan - Hulu", basin: "Krueng Peusangan", province: "Aceh", position: "upstream", lat: 4.752, lng: 96.851, status: "green", lastUpdated: isoHoursAgo(0.3) },
-  { id: "site-05", name: "Krueng Peusangan - Hilir", basin: "Krueng Peusangan", province: "Aceh", position: "downstream", lat: 5.204, lng: 96.701, status: "orange", lastUpdated: isoHoursAgo(0.2) },
-  { id: "site-06", name: "Batang Anai - Hulu", basin: "Batang Anai", province: "West Sumatra", position: "upstream", lat: -0.632, lng: 100.418, status: "green", lastUpdated: isoHoursAgo(0.5) },
-  { id: "site-07", name: "Batang Anai - Tengah", basin: "Batang Anai", province: "West Sumatra", position: "midstream", lat: -0.551, lng: 100.383, status: "yellow", lastUpdated: isoHoursAgo(0.3) },
-  { id: "site-08", name: "Batang Anai - Hilir", basin: "Batang Anai", province: "West Sumatra", position: "downstream", lat: -0.468, lng: 100.323, status: "red", lastUpdated: isoHoursAgo(0.05) },
-  { id: "site-09", name: "Batang Kuranji - Hulu", basin: "Batang Kuranji", province: "West Sumatra", position: "upstream", lat: -0.921, lng: 100.451, status: "green", lastUpdated: isoHoursAgo(0.6) },
-  { id: "site-10", name: "Batang Kuranji - Hilir", basin: "Batang Kuranji", province: "West Sumatra", position: "downstream", lat: -0.933, lng: 100.382, status: "orange", lastUpdated: isoHoursAgo(0.2) },
-  { id: "site-11", name: "Sungai Deli - Hulu", basin: "Sungai Deli", province: "North Sumatra", position: "upstream", lat: 3.352, lng: 98.548, status: "yellow", lastUpdated: isoHoursAgo(0.4) },
-  { id: "site-12", name: "Sungai Deli - Tengah", basin: "Sungai Deli", province: "North Sumatra", position: "midstream", lat: 3.552, lng: 98.617, status: "green", lastUpdated: isoHoursAgo(0.2) },
-  { id: "site-13", name: "Sungai Deli - Hilir", basin: "Sungai Deli", province: "North Sumatra", position: "downstream", lat: 3.701, lng: 98.679, status: "black", lastUpdated: isoHoursAgo(3.9) },
-  { id: "site-14", name: "Sungai Wampu - Hulu", basin: "Sungai Wampu", province: "North Sumatra", position: "upstream", lat: 3.352, lng: 98.152, status: "green", lastUpdated: isoHoursAgo(0.4) },
-  { id: "site-15", name: "Sungai Wampu - Hilir", basin: "Sungai Wampu", province: "North Sumatra", position: "downstream", lat: 4.002, lng: 98.251, status: "green", lastUpdated: isoHoursAgo(0.7) },
+  { id: "site-01", name: "Krueng Aceh - Hulu", basin: "Krueng Aceh", province: "Aceh", position: "upstream", lat: 5.352, lng: 95.552, elevationMeters: 63, status: "yellow", lastUpdated: isoHoursAgo(0.4) },
+  { id: "site-02", name: "Krueng Aceh - Tengah", basin: "Krueng Aceh", province: "Aceh", position: "midstream", lat: 5.451, lng: 95.447, elevationMeters: 26, status: "black", lastUpdated: isoHoursAgo(2.6) },
+  { id: "site-03", name: "Krueng Aceh - Hilir", basin: "Krueng Aceh", province: "Aceh", position: "downstream", lat: 5.552, lng: 95.318, elevationMeters: 8, status: "green", lastUpdated: isoHoursAgo(0.1) },
+  { id: "site-04", name: "Krueng Peusangan - Hulu", basin: "Krueng Peusangan", province: "Aceh", position: "upstream", lat: 4.752, lng: 96.851, elevationMeters: 1610, status: "green", lastUpdated: isoHoursAgo(0.3) },
+  { id: "site-05", name: "Krueng Peusangan - Hilir", basin: "Krueng Peusangan", province: "Aceh", position: "downstream", lat: 5.204, lng: 96.701, elevationMeters: 21, status: "orange", lastUpdated: isoHoursAgo(0.2) },
+  { id: "site-06", name: "Batang Anai - Hulu", basin: "Batang Anai", province: "West Sumatra", position: "upstream", lat: -0.632, lng: 100.418, elevationMeters: 725, status: "green", lastUpdated: isoHoursAgo(0.5) },
+  { id: "site-07", name: "Batang Anai - Tengah", basin: "Batang Anai", province: "West Sumatra", position: "midstream", lat: -0.551, lng: 100.383, elevationMeters: 507, status: "yellow", lastUpdated: isoHoursAgo(0.3) },
+  { id: "site-08", name: "Batang Anai - Hilir", basin: "Batang Anai", province: "West Sumatra", position: "downstream", lat: -0.468, lng: 100.323, elevationMeters: 938, status: "red", lastUpdated: isoHoursAgo(0.05) },
+  { id: "site-09", name: "Batang Kuranji - Hulu", basin: "Batang Kuranji", province: "West Sumatra", position: "upstream", lat: -0.921, lng: 100.451, elevationMeters: 178, status: "green", lastUpdated: isoHoursAgo(0.6) },
+  { id: "site-10", name: "Batang Kuranji - Hilir", basin: "Batang Kuranji", province: "West Sumatra", position: "downstream", lat: -0.933, lng: 100.382, elevationMeters: 16, status: "orange", lastUpdated: isoHoursAgo(0.2) },
+  { id: "site-11", name: "Sungai Deli - Hulu", basin: "Sungai Deli", province: "North Sumatra", position: "upstream", lat: 3.352, lng: 98.548, elevationMeters: 389, status: "yellow", lastUpdated: isoHoursAgo(0.4) },
+  { id: "site-12", name: "Sungai Deli - Tengah", basin: "Sungai Deli", province: "North Sumatra", position: "midstream", lat: 3.552, lng: 98.617, elevationMeters: 35, status: "green", lastUpdated: isoHoursAgo(0.2) },
+  { id: "site-13", name: "Sungai Deli - Hilir", basin: "Sungai Deli", province: "North Sumatra", position: "downstream", lat: 3.701, lng: 98.679, elevationMeters: 6, status: "black", lastUpdated: isoHoursAgo(3.9) },
+  { id: "site-14", name: "Sungai Wampu - Hulu", basin: "Sungai Wampu", province: "North Sumatra", position: "upstream", lat: 3.352, lng: 98.152, elevationMeters: 522, status: "green", lastUpdated: isoHoursAgo(0.4) },
+  { id: "site-15", name: "Sungai Wampu - Hilir", basin: "Sungai Wampu", province: "North Sumatra", position: "downstream", lat: 4.002, lng: 98.251, elevationMeters: 3, status: "green", lastUpdated: isoHoursAgo(0.7) },
 ];
 
 export const PROVINCES = [...new Set(SITES.map((s) => s.province))];

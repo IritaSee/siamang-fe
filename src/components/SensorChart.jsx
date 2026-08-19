@@ -9,9 +9,15 @@ const METRICS = {
   flow: { en: "Flow", id: "Debit Air", unit: "m³/s", color: "#7c3aed" },
 };
 
-export default function SensorChart({ series, locale = "en" }) {
+export default function SensorChart({ series, locale = "en", mode: modeProp, onModeChange }) {
   const [metric, setMetric] = useState("waterLevel");
-  const [mode, setMode] = useState("now");
+  // Optional controlled mode, so a parent (operator SiteDetail) can drive
+  // this chart's Now/Forecast state and a sibling map from one toggle.
+  // Falls back to internal state when unused (PublicSiteDetail.jsx), so this
+  // stays a no-op change for every call site that doesn't opt in.
+  const [internalMode, setInternalMode] = useState("now");
+  const mode = modeProp ?? internalMode;
+  const setMode = onModeChange ?? setInternalMode;
 
   const def = METRICS[metric];
   const points = mode === "now" ? series.now : series.forecast;

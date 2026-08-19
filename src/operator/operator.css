@@ -361,3 +361,26 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* --- Flood-impact overlay legend (ImpactLegend.jsx) --------------------- */
+
+.impact-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-500);
+  line-height: 1.4;
+}
+.impact-legend__swatch {
+  width: 16px;
+  height: 13px;
+  flex-shrink: 0;
+  /* Organic blob outline, echoing the irregular flow-elongated polygon on
+     the map rather than a plain circle. */
+  border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+  background: var(--impact-glow-2);
+  border: 1.5px solid var(--impact-glow-3);
+  opacity: 0.85;
+}

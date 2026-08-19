@@ -5,7 +5,9 @@ import StatusBadge from "../components/StatusBadge";
 import Icon from "../components/Icon";
 import SensorChart from "../components/SensorChart";
 import SiteMap from "../components/SiteMap";
+import ImpactLegend from "./ImpactLegend";
 import { siteById, SITE_SERIES, devicesForSite, warningsForSite, timeAgo, formatClock } from "../data/mockData";
+import { computeImpactFootprint } from "../theme/impactOverlay";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const POSITION_LABEL = {
@@ -35,6 +37,9 @@ export default function SiteDetail() {
   const navigate = useNavigate();
   const site = siteById(siteId);
   const [actionMsg, setActionMsg] = useState(null);
+  // Drives both the sensor chart's Now/Forecast toggle and the map's flood-
+  // impact overlay from one signal, so they tell a consistent story.
+  const [mode, setMode] = useState("now");
 
   if (!site) {
     return (
@@ -48,6 +53,7 @@ export default function SiteDetail() {
   const series = SITE_SERIES[site.id];
   const devices = devicesForSite(site.id);
   const history = warningsForSite(site.id);
+  const impactFootprint = computeImpactFootprint(site, series, mode);
 
   function runAction(action) {
     setActionMsg(`${locale === "id" ? "Aksi" : "Action"} ${action.label[locale]} ${locale === "id" ? "tercatat (mock)" : "recorded (mock)"} - ${new Date().toLocaleTimeString(locale === "id" ? "id-ID" : "en-GB")}`);
@@ -96,7 +102,7 @@ export default function SiteDetail() {
           <div className="section-header">
             <span className="section-title">{locale === "id" ? "Pembacaan sensor" : "Sensor readings"}</span>
           </div>
-          <SensorChart series={series} locale={locale} />
+          <SensorChart series={series} locale={locale} mode={mode} onModeChange={setMode} />
         </Card>
 
         <Card className="op-panel" style={{ padding: 0, overflow: "hidden" }}>
@@ -104,7 +110,19 @@ export default function SiteDetail() {
             <span className="section-title">{locale === "id" ? "Lokasi" : "Location"}</span>
           </div>
           <div style={{ padding: 18 }}>
-            <SiteMap sites={[site]} selectedSiteId={site.id} height={260} center={[site.lat, site.lng]} zoom={11} locale={locale} />
+            <SiteMap
+              sites={[site]}
+              selectedSiteId={site.id}
+              height={260}
+              center={[site.lat, site.lng]}
+              zoom={11}
+              locale={locale}
+              basemap="terrain"
+              impactFootprints={impactFootprint ? { [site.id]: impactFootprint } : undefined}
+            />
+            <div style={{ marginTop: 10 }}>
+              <ImpactLegend locale={locale} />
+            </div>
           </div>
         </Card>
       </div>
