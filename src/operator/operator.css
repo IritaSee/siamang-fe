@@ -374,9 +374,13 @@
   line-height: 1.4;
 }
 .impact-legend__swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+  width: 16px;
+  height: 13px;
   flex-shrink: 0;
-  background: radial-gradient(circle, var(--impact-glow-3), var(--impact-glow-2), var(--impact-glow-1));
+  /* Organic blob outline, echoing the irregular flow-elongated polygon on
+     the map rather than a plain circle. */
+  border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+  background: var(--impact-glow-2);
+  border: 1.5px solid var(--impact-glow-3);
+  opacity: 0.85;
 }

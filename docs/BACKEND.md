@@ -136,13 +136,25 @@ Timestamps are ISO 8601 UTC strings. IDs are opaque strings.
 ```
 
 **Flood-impact overlay is a frontend mockup illustration, not a real contract.** The Operator
-Console's map (`src/theme/impactOverlay.js`) draws a soft circular glow per site, sized from
-`status` + the existing forecast trend, meant to represent a vendor's AI flood-impact prediction —
-this is a placeholder for a real integration, not something to productionize as-is. A real vendor
-model would return actual geometry (GeoJSON `Polygon`/`MultiPolygon`) or a raster/heatmap tile URL
-per forecast run, keyed to a site or an arbitrary area — not a computed circle. When that
-integration exists, the frontend's circle math should be discarded wholesale, not incrementally
-adapted. No `Site` field should be added for this until the real shape is known.
+Console's map (`src/theme/impactOverlay.js`) draws one irregular polygon per site — sized from
+`status` + the existing forecast trend, and elongated toward the basin's real downhill direction
+(derived from `SITES[].elevationMeters`, see below) — meant to represent a vendor's AI flood-impact
+prediction. This is a placeholder for a real integration, not something to productionize as-is. A
+real vendor model would return actual geometry (GeoJSON `Polygon`/`MultiPolygon`) or a raster/
+heatmap tile URL per forecast run, keyed to a site or an arbitrary area — not a computed, jittered
+shape. When that integration exists, the frontend's polygon math should be discarded wholesale,
+not incrementally adapted.
+
+`SITES[].elevationMeters` (real SRTM elevation, via opentopodata.org's public API, fetched once
+and baked into the mock fixtures rather than queried live) **is** a `Site` field worth carrying
+forward, unlike the polygon math — it's real data, not mockup illustration. If a real backend
+seeds from this same fixture set, keep the field; if it seeds from something else, populate it the
+same way (a one-time elevation lookup per site) rather than dropping it, since a few consumers
+outside the impact-overlay computation could reasonably use it too (e.g., displaying a site's
+elevation as context). Worth knowing: this data revealed that one site's `position` label
+("downstream") doesn't match its real elevation relative to its basin-mates — see the comment on
+`SITES` in `mockData.js`. That's a mockup coordinate quirk, not a backend concern, but don't be
+surprised if it resurfaces if real coordinates are ever swapped in.
 
 ### Device
 
