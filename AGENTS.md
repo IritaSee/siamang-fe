@@ -81,7 +81,7 @@ src/
   chartSetup.js            Chart.js registration (import for side effect)
 
   theme/riskLevels.js      ** the risk-status source of truth — see §5 **
-  theme/impactOverlay.js   flood-impact glow computation (operator maps only, see §5, §10)
+  theme/impactOverlay.js   flood-impact polygon computation (operator maps only, see §5, §10)
   i18n/LanguageContext.jsx global ID/EN locale state (see §6)
   reports/ReportsContext.jsx cross-app citizen-report state (see §9)
   data/mockData.js         ALL mock data (see §7)
@@ -196,12 +196,20 @@ worse than green ones, and silent (`black`) devices show signal collapsing to ~0
 Current fixture size: 15 sites / 6 basins / 33 devices / 9 warnings / 6 users / 5 citizen reports.
 
 Exports: `SITES`, `BASINS`, `PROVINCES`, `SITE_SERIES`, `DEVICES`, `DEVICE_HEALTH`, `WARNINGS`,
-`USERS`, `PUBLIC_ALERTS`, `PUBLIC_FAVORITES`, `CITIZEN_REPORTS`, `NOW_ISO`, and helpers `siteById`,
-`devicesForSite`, `warningsForSite`, `nearestSite`, `timeAgo`, `formatClock`, `formatDateTime`.
+`USERS`, `PUBLIC_ALERTS`, `PUBLIC_FAVORITES`, `CITIZEN_REPORTS`, `NOW_ISO`, `mulberry32`,
+`seedFromString`, and helpers `siteById`, `devicesForSite`, `warningsForSite`, `nearestSite`,
+`timeAgo`, `formatClock`, `formatDateTime`. `mulberry32`/`seedFromString` are exported so other
+modules (`theme/impactOverlay.js`) can generate their own reproducible fixtures without duplicating
+a second PRNG — reuse these rather than adding another one.
 
 `nearestSite(lat, lng)` returns the closest `SITES` entry by haversine distance, or `null` if no
 coordinates were given — used to give a citizen report context without requiring the reporter to
 know which official monitoring site they're near (see §9).
+
+`SITES[].elevationMeters` is real elevation (SRTM, via opentopodata.org — see the comment on
+`SITES` in the file), fetched once and baked in rather than queried live. This app has no other
+runtime network dependency and shouldn't gain one for this either — if you ever need elevation for
+a hypothetical new site, look it up once and hardcode it the same way, don't add a fetch call.
 
 **Timestamp gotcha for live-created data:** anything created at runtime (not a build-time fixture)
 must still stamp its timestamp from the frozen clock, not the real one — use `NOW_ISO`, not
@@ -305,16 +313,25 @@ from browsers. See `.meta-flag--real` / `--simulated` / `--unavailable` in `ui.c
 - **The Battery Status API is deprecated and removed from modern browsers.** Any on-screen battery
   reading in this app is simulated — don't try to wire up a real one, and don't drop the
   "Simulated" label if you touch that UI.
-- **The flood-impact overlay's circle radii are pixels, not meters, until `SiteMap.jsx` converts
-  them.** `SiteMap`'s map instance swings between zoom 6 (the multi-site overview) and zoom 12
-  (`FlyTo` hardcodes this once a site is selected) — a 64x pixel-scale range, so `computeImpactFootprint()`
-  deliberately returns zoom-independent pixel targets; only `SiteMap.jsx`'s internal `ImpactRings`
-  helper (tracks zoom via `useMapEvent("zoomend", ...)`) turns them into live meters. Don't
-  "simplify" this back to a flat meters value — it was tried and breaks one of the two zoom levels.
+- **The flood-impact overlay's polygon vertex offsets are pixels, not degrees, until `SiteMap.jsx`
+  converts them.** `SiteMap`'s map instance swings between zoom 6 (the multi-site overview) and
+  zoom 12 (`FlyTo` hardcodes this once a site is selected) — a 64x pixel-scale range, so
+  `computeImpactFootprint()` deliberately returns zoom-independent pixel targets; only
+  `SiteMap.jsx`'s internal `ImpactZones` helper places them, via
+  `map.latLngToLayerPoint`/`layerPointToLatLng` (Leaflet's own projection, not a hand-rolled
+  meters/degrees approximation) so they land correctly at any zoom, tracking zoom changes via
+  `useMapEvent("zoomend", ...)` to force a re-render. Don't "simplify" this to fixed lat/lng
+  offsets — it was tried (as circle radii in meters) and breaks one of the two zoom levels.
 - **CSS custom properties DO resolve inside Leaflet's `pathOptions`** (`fillColor: "var(--impact-glow-1)"`
   works, confirmed live) — but only because `SiteMap.jsx`'s `MapContainer` uses Leaflet's default
   SVG renderer. Its Canvas renderer does not resolve `var()`. Don't add `preferCanvas` to this map
   without re-testing every color that depends on this.
+- **The impact polygon's flow direction comes from real elevation (`SITES[].elevationMeters`),
+  not the `position` label** — `theme/impactOverlay.js`'s `basinFlowDirection()` finds each basin's
+  actual highest/lowest point. One site's `position` label doesn't match its real elevation
+  relative to its basin-mates (see the comment on `SITES` in `mockData.js`) — this was discovered
+  by fetching real SRTM data, not assumed, and elevation deliberately overrides the label rather
+  than the other way around.
 
 ---
 

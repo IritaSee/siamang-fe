@@ -2,23 +2,29 @@ import { INTENSITY_BY_STATUS, SITES, mulberry32, seedFromString } from "../data/
 
 const POSITION_RANK = { upstream: 0, midstream: 1, downstream: 2 };
 
-// Illustrative mockup only — see docs/BACKEND.md. There's no real elevation
-// data available here (OpenTopoMap is a rendered tile image, not a queryable
-// terrain dataset), so "flows toward lower elevation" is approximated using
-// each basin's own upstream -> downstream site positions — real domain data
-// already in SITES, and a reasonable proxy since downstream sites really are
-// further toward sea level. A real integration would derive this from the
-// vendor model's own geometry or an actual elevation/DEM source, not this
-// heuristic.
+// Illustrative mockup only — see docs/BACKEND.md. OpenTopoMap's tiles are a
+// rendered image, not queryable terrain, so "flows toward lower elevation"
+// uses `SITES[].elevationMeters` — real SRTM data fetched once and baked
+// into mockData.js — to find each basin's actual highest/lowest points.
+// This deliberately does NOT use the `position` (upstream/midstream/
+// downstream) label: five of six basins' labels already agree with real
+// elevation, but one site's label disagrees with its real terrain (see the
+// comment on SITES in mockData.js) — trusting elevation over the label
+// self-corrects that case without moving any coordinates other features
+// already depend on. Falls back to the position label only if elevation is
+// ever missing.
 function basinFlowDirection(site) {
   const basinSites = SITES.filter((s) => s.basin === site.basin);
+  const hasElevation = basinSites.every((s) => typeof s.elevationMeters === "number");
+  const rankOf = (s) => (hasElevation ? -s.elevationMeters : POSITION_RANK[s.position]);
+
   let up = basinSites[0];
   let down = basinSites[0];
   for (const s of basinSites) {
-    if (POSITION_RANK[s.position] < POSITION_RANK[up.position]) up = s;
-    if (POSITION_RANK[s.position] > POSITION_RANK[down.position]) down = s;
+    if (rankOf(s) < rankOf(up)) up = s;
+    if (rankOf(s) > rankOf(down)) down = s;
   }
-  if (up === down) return null; // basin has only one distinct position — no direction to derive
+  if (up === down) return null; // basin has only one distinct point — no direction to derive
 
   const avgLatRad = ((up.lat + down.lat) / 2) * (Math.PI / 180);
   const dx = (down.lng - up.lng) * Math.cos(avgLatRad); // eastward component
